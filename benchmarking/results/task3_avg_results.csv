@@ -1,0 +1,13 @@
+IMPLEMENTATION, NUM_THREADS, TIME(s), SCENARIO
+col_prevent_seq,1,3.116164,commute_200000.xml
+col_prevent_par,1,5.080708,commute_200000.xml
+col_prevent_par,2,3.293978,commute_200000.xml
+col_prevent_par,4,2.133978,commute_200000.xml
+col_prevent_seq,1,0.1024294,lab3-scenario.xml
+col_prevent_par,1,0.175379,lab3-scenario.xml
+col_prevent_par,2,0.1407496,lab3-scenario.xml
+col_prevent_par,4,0.1485132,lab3-scenario.xml
+col_prevent_seq,1,0.062405880000000004,worst_scenario.xml
+col_prevent_par,1,0.10356984,worst_scenario.xml
+col_prevent_par,2,0.10246844,worst_scenario.xml
+col_prevent_par,4,0.1153772,worst_scenario.xml

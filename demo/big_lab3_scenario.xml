@@ -1,0 +1,50 @@
+<welcome>
+  <!-- waypoints - define before the agents! -->
+  <waypoint id="w1" x="80" y="160" r="20" />
+  <waypoint id="w2" x="120" y="0" r="20" />
+  <waypoint id="w3" x="0" y="100" r="20" />
+  <waypoint id="w4" x="160" y="100" r="20" />
+  <waypoint id="w5" x="40" y="0" r="20" />
+
+  <!-- agents -->
+  <agent x="60" y="140" n="200" dx="40" dy="40">
+    <addwaypoint id="w1" />
+    <addwaypoint id="w2" />
+    <addwaypoint id="w3" />
+    <addwaypoint id="w4" />
+    <addwaypoint id="w5" />
+  </agent>
+
+  <agent x="120" y="-20" n="200" dx="40" dy="40">
+    <addwaypoint id="w2" />
+    <addwaypoint id="w3" />
+    <addwaypoint id="w4" />
+    <addwaypoint id="w5" />
+    <addwaypoint id="w1" />
+  </agent>
+
+  <agent x="-20" y="80" n="200" dx="40" dy="40">
+    <addwaypoint id="w3" />
+    <addwaypoint id="w4" />
+    <addwaypoint id="w5" />
+    <addwaypoint id="w1" />
+    <addwaypoint id="w2" />
+  </agent>
+
+  <agent x="140" y="80" n="200" dx="40" dy="40">
+    <addwaypoint id="w4" />
+    <addwaypoint id="w5" />
+    <addwaypoint id="w1" />
+    <addwaypoint id="w2" />
+    <addwaypoint id="w3" />
+  </agent>
+
+  <agent x="20" y="-20" n="200" dx="40" dy="40">
+    <addwaypoint id="w5" />
+    <addwaypoint id="w1" />
+    <addwaypoint id="w2" />
+    <addwaypoint id="w3" />
+    <addwaypoint id="w4" />
+  </agent>
+
+</welcome>

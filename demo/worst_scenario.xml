@@ -1,0 +1,11 @@
+<welcome>
+  <waypoint id="w1" x="0" y="70" r="5"/>
+  <waypoint id="w2" x="100" y="20" r="5"/>
+
+  <agent x="160" y="70" n="200" dx="50" dy="50">
+    <addwaypoint id="w1"/>
+    <addwaypoint id="w2"/>
+    <addwaypoint id="w1"/>
+    <addwaypoint id="w2"/>
+  </agent>
+</welcome>
