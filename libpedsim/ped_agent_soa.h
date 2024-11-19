@@ -14,7 +14,7 @@ class TagentSoA {
   static const int MAX_THREADS;
   static const int NUM_QUADRANTS;
 
-  TagentSoA(std::vector<Ped::Tagent*> agents);
+  TagentSoA(std::vector<Ped::Tagent*> agents, bool heatmap_cuda);
   ~TagentSoA();
 
   void setupPthreads(int n_threads);
@@ -86,6 +86,9 @@ class TagentSoA {
 
   void processQuadrant(int quadrant, std::vector<CrossingAgent>& crossing_agents,
                        std::vector<OutOfBoundsMovement>& out_of_bounds_agents);
+
+  // boolean var to check if heatmap has been run on CUDA
+  bool m_heatmap_cuda = false;
 };
 
 }  // namespace Ped

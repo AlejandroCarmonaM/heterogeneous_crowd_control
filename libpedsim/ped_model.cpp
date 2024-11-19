@@ -19,7 +19,11 @@ Ped::Model::Model(std::vector<Ped::Tagent*> agentsInScenario, IMPLEMENTATION imp
   // agents = std::vector<Ped::Tagent*>(agentsInScenario.begin(),
   //                                    agentsInScenario.end());
 
-  agents_soa = new TagentSoA(agentsInScenario);
+  bool heatmap_cuda = false;
+  if (heatmapImpl == PAR_HM) {
+    heatmap_cuda = true;
+  }
+  agents_soa = new TagentSoA(agentsInScenario, heatmap_cuda);
 
   if (isCheckingCollisions() && agents_soa->printCollisions()) {
     cerr << "ERROR: Collisions found in initial positions" << endl;

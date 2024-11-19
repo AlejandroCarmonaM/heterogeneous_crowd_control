@@ -1,5 +1,6 @@
 #include "ped_agent_soa.h"
 
+#include <cuda_runtime.h>
 #include <immintrin.h>
 #include <math.h>
 #include <stdlib.h>
@@ -18,10 +19,11 @@ const int Ped::TagentSoA::NUM_QUADRANTS = 4;
 const int Ped::TagentSoA::AGENTS_PER_VECTOR = 4;
 const int Ped::TagentSoA::N_ALTERNATIVES = 3;
 
-Ped::TagentSoA::TagentSoA(std::vector<Ped::Tagent*> agents) {
+Ped::TagentSoA::TagentSoA(std::vector<Ped::Tagent*> agents, bool heatmap_cuda) {
   constexpr int ALIGNMENT = AGENTS_PER_VECTOR * sizeof(int);
 
   n_agents = agents.size();
+  m_heatmap_cuda = heatmap_cuda;
 
   agents_x = static_cast<int*>(std::aligned_alloc(ALIGNMENT, n_agents * sizeof(int)));
   agents_y = static_cast<int*>(std::aligned_alloc(ALIGNMENT, n_agents * sizeof(int)));
@@ -30,8 +32,15 @@ Ped::TagentSoA::TagentSoA(std::vector<Ped::Tagent*> agents) {
   destination_y = static_cast<int*>(std::aligned_alloc(ALIGNMENT, n_agents * sizeof(int)));
   destination_r = static_cast<int*>(std::aligned_alloc(ALIGNMENT, n_agents * sizeof(int)));
 
-  desired_pos_x = static_cast<int*>(std::aligned_alloc(ALIGNMENT, n_agents * sizeof(int)));
-  desired_pos_y = static_cast<int*>(std::aligned_alloc(ALIGNMENT, n_agents * sizeof(int)));
+  // declare desired_pos_x and desired_pos_y as CUDA pinned memory (if needed)
+  if (m_heatmap_cuda) {
+    cudaMallocHost((void**)&desired_pos_x, n_agents * sizeof(int));
+    cudaMallocHost((void**)&desired_pos_y, n_agents * sizeof(int));
+    // declare desired_pos_x and desired_pos_y as normal memory if heatmap not on CUDA
+  } else {
+    desired_pos_x = static_cast<int*>(std::aligned_alloc(ALIGNMENT, n_agents * sizeof(int)));
+    desired_pos_y = static_cast<int*>(std::aligned_alloc(ALIGNMENT, n_agents * sizeof(int)));
+  }
 
   current_waypoint = new int[n_agents];
 
@@ -456,12 +465,24 @@ Ped::TagentSoA::~TagentSoA() {
     destination_r = nullptr;
   }
   if (desired_pos_x) {
-    std::free(desired_pos_x);
-    desired_pos_x = nullptr;
+    if (m_heatmap_cuda) {
+      // free desired_pos_x and desired_pos_y as CUDA pinned memory
+      cudaFreeHost(desired_pos_x);
+      desired_pos_x = nullptr;
+    } else {
+      std::free(desired_pos_x);
+      desired_pos_x = nullptr;
+    }
   }
   if (desired_pos_y) {
-    std::free(desired_pos_y);
-    desired_pos_y = nullptr;
+    if (m_heatmap_cuda) {
+      // free desired_pos_x and desired_pos_y as CUDA pinned memory
+      cudaFreeHost(desired_pos_y);
+      desired_pos_y = nullptr;
+    } else {
+      std::free(desired_pos_y);
+      desired_pos_y = nullptr;
+    }
   }
 
   // Normal delete
