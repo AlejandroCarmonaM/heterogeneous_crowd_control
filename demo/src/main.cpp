@@ -172,7 +172,13 @@ int main(int argc, char* argv[]) {
     // Header for CSV Format -> Fields={IMPLEMENTATION,NUM_THREADS,TIME(s)}
     // cout << "IMPLEMENTATION,NUM_THREADS,TIME(s)" << endl;
     cout << impl_str << "," << n_threads << "," << elapsed_seconds.count() << endl;
-    model.print_avg_timings(maxNumberOfStepsToSimulate);
+    if (heatmap == Ped::HEATMAP_IMPL::PAR_HM) {
+      model.print_gpu_heatmap_avg_timings(maxNumberOfStepsToSimulate);
+    }
+    if (heatmap == Ped::HEATMAP_IMPL::SEQ_HM) {
+      model.print_seq_heatmap_timings(maxNumberOfStepsToSimulate);
+    }
+
   } else {
     cout << "Time: " << elapsed_seconds.count() << " seconds." << endl;
   }

@@ -131,7 +131,8 @@ class Model {
   int const* const* getHeatmap() const { return blurred_heatmap; };
 
   int getHeatmapSize() const;
-  void print_avg_timings(int n_steps);
+  void print_gpu_heatmap_avg_timings(int n_steps);
+  void print_seq_heatmap_timings(int n_steps);
 
  private:
   IMPLEMENTATION impl;
@@ -140,6 +141,7 @@ class Model {
 
   TagentSoA* agents_soa = nullptr;
   float total_tick_time = 0.0;
+  float total_heatmap_seq_time = 0.0;
 
   // The agents in this scenario
   // std::vector<Tagent*> agents;

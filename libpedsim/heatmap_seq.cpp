@@ -109,8 +109,11 @@ void Ped::Model::updateHeatmapSeq() {
   }
   auto end = std::chrono::high_resolution_clock::now();
   auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-  std::cout << "updateHeatmapSeq execution time: " << elapsed.count() << " milliseconds"
-            << std::endl;
+  total_heatmap_seq_time += elapsed.count();
+}
+
+void Ped::Model::print_seq_heatmap_timings(int n_steps) {
+  cout << "Average time for heatmap seq: " << total_heatmap_seq_time / n_steps << " ms" << endl;
 }
 
 int Ped::Model::getHeatmapSize() const { return SCALED_SIZE; }
