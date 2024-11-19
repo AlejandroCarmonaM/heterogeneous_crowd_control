@@ -29,6 +29,11 @@ Waypoint* d_waypoints;
 
 int numBlocks;
 
+/*GLOBAL VARS FOR TIMING KERNELS*/
+float total_ms_fade = 0, total_ms_update = 0, total_ms_norm_scale = 0, total_ms_blur = 0,
+      total_ms_memcpy_desired_pos_x = 0, total_ms_memcpy_desired_pos_y = 0,
+      total_ms_memcpy_blurred_heatmap = 0;
+
 /**********************************************
  * HELPER FUNCTIONS
  * *********************************************/
@@ -353,19 +358,26 @@ void Ped::Model::updateHeatmapCUDA() {
   cudaEventCreate(&startTotal);
   cudaEventCreate(&stopTotal);
   cudaEventRecord(startTotal);
+  float ms_fade = 0, ms_update = 0, ms_norm_scale = 0, ms_blur = 0, ms_memcpy_desired_pos_x = 0,
+        ms_memcpy_desired_pos_y = 0, ms_memcpy_blurred_heatmap = 0;
 
   /*1) Copy agent positions to GPU*/
   const int* h_desired_pos_x = agents_soa->getDesiredPosX();
   const int* h_desired_pos_y = agents_soa->getDesiredPosY();
 
-  cudaMemcpy(d_desired_pos_x, h_desired_pos_x, n_agents * sizeof(int), cudaMemcpyHostToDevice);
-  cudaCheckError(cudaGetLastError());
+  // cudaMemcpy(d_desired_pos_x, h_desired_pos_x, n_agents * sizeof(int), cudaMemcpyHostToDevice);
+  // cudaCheckError(cudaGetLastError());
+  MEASURE_KERNEL_EXECUTION(
+      ms_memcpy_desired_pos_x,
+      cudaMemcpy(d_desired_pos_x, h_desired_pos_x, n_agents * sizeof(int), cudaMemcpyHostToDevice));
 
-  cudaMemcpy(d_desired_pos_y, h_desired_pos_y, n_agents * sizeof(int), cudaMemcpyHostToDevice);
-  cudaCheckError(cudaGetLastError());
+  // cudaMemcpy(d_desired_pos_y, h_desired_pos_y, n_agents * sizeof(int), cudaMemcpyHostToDevice);
+  // cudaCheckError(cudaGetLastError());
+  MEASURE_KERNEL_EXECUTION(
+      ms_memcpy_desired_pos_y,
+      cudaMemcpy(d_desired_pos_y, h_desired_pos_y, n_agents * sizeof(int), cudaMemcpyHostToDevice));
 
   /*2) Launch timed kernels*/
-  float ms_fade = 0, ms_update = 0, ms_norm_scale = 0, ms_blur = 0;
 
   blocksPerGrid = (SIZE * SIZE + BLOCK_SIZE - 1) / BLOCK_SIZE;
   MEASURE_KERNEL_EXECUTION(ms_fade, fadeHeatmap<<<blocksPerGrid, BLOCK_SIZE>>>(d_heatmap));
@@ -386,9 +398,12 @@ void Ped::Model::updateHeatmapCUDA() {
   MEASURE_KERNEL_EXECUTION(
       ms_blur, gaussianBlur<<<gridDim, blockDim>>>(d_scaled_heatmap, d_blurred_heatmap));
   /*3) Copy back blurred heatmap to host*/
-  cudaMemcpy(h_blurred_heatmap, d_blurred_heatmap, SCALED_SIZE * SCALED_SIZE * sizeof(int),
-             cudaMemcpyDeviceToHost);
-  cudaCheckError(cudaGetLastError());
+  // cudaMemcpy(h_blurred_heatmap, d_blurred_heatmap, SCALED_SIZE * SCALED_SIZE * sizeof(int),
+  // cudaMemcpyDeviceToHost); cudaCheckError(cudaGetLastError());
+  MEASURE_KERNEL_EXECUTION(
+      ms_memcpy_blurred_heatmap,
+      cudaMemcpy(h_blurred_heatmap, d_blurred_heatmap, SCALED_SIZE * SCALED_SIZE * sizeof(int),
+                 cudaMemcpyDeviceToHost));
 
   /*4) Finish GPU Timing*/
   cudaEventRecord(stopTotal);
@@ -396,15 +411,46 @@ void Ped::Model::updateHeatmapCUDA() {
   float millisecondsTotal = 0;
   cudaEventElapsedTime(&millisecondsTotal, startTotal, stopTotal);
 
-  // Output the timings
-  printf("Kernel Timings:\n");
-  printf("Fade Heatmap: %f ms\n", ms_fade);
-  printf("Update Heatmap: %f ms\n", ms_update);
-  printf("Normalize + Scale Heatmap: %f ms\n", ms_norm_scale);
-  printf("Gaussian Blur: %f ms\n", ms_blur);
-  printf("Total GPU Time: %f ms\n\n", millisecondsTotal);
+  /*5) Update timing vars*/
+  total_ms_fade += ms_fade;
+  total_ms_update += ms_update;
+  total_ms_norm_scale += ms_norm_scale;
+  total_ms_blur += ms_blur;
+  total_ms_memcpy_desired_pos_x += ms_memcpy_desired_pos_x;
+  total_ms_memcpy_desired_pos_y += ms_memcpy_desired_pos_y;
+  total_ms_memcpy_blurred_heatmap += ms_memcpy_blurred_heatmap;
 
   // Clean up cuda events
   cudaEventDestroy(startTotal);
   cudaEventDestroy(stopTotal);
+}
+
+// function to print the average time taken by each kernel and memory copy and the total time
+void Ped::Model::print_avg_timings(int n_steps) {
+  float avg_fade = total_ms_fade / n_steps;
+  float avg_update = total_ms_update / n_steps;
+  float avg_norm_scale = total_ms_norm_scale / n_steps;
+  float avg_blur = total_ms_blur / n_steps;
+  float avg_memcpy_desired_pos_x = total_ms_memcpy_desired_pos_x / n_steps;
+  float avg_memcpy_desired_pos_y = total_ms_memcpy_desired_pos_y / n_steps;
+  float avg_memcpy_blurred_heatmap = total_ms_memcpy_blurred_heatmap / n_steps;
+
+  float avg_total = avg_fade + avg_update + avg_norm_scale + avg_blur + avg_memcpy_desired_pos_x +
+                    avg_memcpy_desired_pos_y + avg_memcpy_blurred_heatmap;
+
+  float avg_tick = total_tick_time / n_steps;
+
+  // Kernel_name, avg_time (ms)
+  cout << "Kernel_name, avg_time (ms)" << endl;
+  cout << "fadeHeatmap, " << avg_fade << endl;
+  cout << "updateHeatmap, " << avg_update << endl;
+  cout << "normScaleHeatmap, " << avg_norm_scale << endl;
+  cout << "gaussianBlur, " << avg_blur << endl;
+  cout << "memcpy_desired_pos_x, " << avg_memcpy_desired_pos_x << endl;
+  cout << "memcpy_desired_pos_y, " << avg_memcpy_desired_pos_y << endl;
+  cout << "memcpy_blurred_heatmap, " << avg_memcpy_blurred_heatmap << endl;
+  cout << "total_time_GPU, " << avg_total << endl;
+  cout << "tick_time_CPU, " << avg_tick << endl;
+
+  // Kernel_name, avg_time (ms)
 }

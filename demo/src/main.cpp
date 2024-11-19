@@ -142,7 +142,7 @@ int main(int argc, char* argv[]) {
   MainWindow mainwindow(model);
 
   // Default number of steps to simulate
-  const int maxNumberOfStepsToSimulate = 10000;
+  const int maxNumberOfStepsToSimulate = 100;
   PedSimulation* simulation = new PedSimulation(model, mainwindow);
 
   if (!timing_mode) {
@@ -172,9 +172,12 @@ int main(int argc, char* argv[]) {
     // Header for CSV Format -> Fields={IMPLEMENTATION,NUM_THREADS,TIME(s)}
     // cout << "IMPLEMENTATION,NUM_THREADS,TIME(s)" << endl;
     cout << impl_str << "," << n_threads << "," << elapsed_seconds.count() << endl;
+    model.print_avg_timings(maxNumberOfStepsToSimulate);
   } else {
     cout << "Time: " << elapsed_seconds.count() << " seconds." << endl;
   }
+
+  // print timings
 
   delete (simulation);
 

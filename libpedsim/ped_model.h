@@ -59,7 +59,7 @@ class Model {
         agents_soa->seqTick();
         auto end = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> elapsed = end - start;
-        std::cout << "seqTick() took " << elapsed.count() << " seconds\n";
+        total_tick_time += elapsed.count();
         break;
       }
       case OMP: {
@@ -67,7 +67,7 @@ class Model {
         agents_soa->ompTick();
         auto end = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> elapsed = end - start;
-        std::cout << "ompTick() took " << elapsed.count() << " seconds\n";
+        total_tick_time += elapsed.count();
         break;
       }
       case PTHREAD: {
@@ -75,7 +75,7 @@ class Model {
         agents_soa->pthreadTick();
         auto end = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> elapsed = end - start;
-        std::cout << "pthreadTick() took " << elapsed.count() << " seconds\n";
+        total_tick_time += elapsed.count();
         break;
       }
       case VECTOR: {
@@ -83,7 +83,7 @@ class Model {
         agents_soa->vectorTick();
         auto end = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> elapsed = end - start;
-        std::cout << "vectorTick() took " << elapsed.count() << " seconds\n";
+        total_tick_time += elapsed.count();
         break;
       }
       case CUDA: {
@@ -91,7 +91,7 @@ class Model {
         agents_soa->callTickCUDA();
         auto end = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> elapsed = end - start;
-        std::cout << "callTickCUDA() took " << elapsed.count() << " seconds\n";
+        total_tick_time += elapsed.count();
         break;
       }
       case COL_PREVENT_SEQ: {
@@ -99,7 +99,7 @@ class Model {
         agents_soa->colPreventSeqTick();
         auto end = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> elapsed = end - start;
-        std::cout << "colPreventSeqTick() took " << elapsed.count() << " seconds\n";
+        total_tick_time += elapsed.count();
         break;
       }
       case COL_PREVENT_PAR: {
@@ -107,7 +107,7 @@ class Model {
         agents_soa->colPreventParTick();
         auto end = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> elapsed = end - start;
-        std::cout << "colPreventParTick() took " << elapsed.count() << " seconds\n";
+        total_tick_time += elapsed.count();
         break;
       }
     }
@@ -131,6 +131,7 @@ class Model {
   int const* const* getHeatmap() const { return blurred_heatmap; };
 
   int getHeatmapSize() const;
+  void print_avg_timings(int n_steps);
 
  private:
   IMPLEMENTATION impl;
@@ -138,6 +139,7 @@ class Model {
   HEATMAP_IMPL heatmapImpl;
 
   TagentSoA* agents_soa = nullptr;
+  float total_tick_time = 0.0;
 
   // The agents in this scenario
   // std::vector<Tagent*> agents;
