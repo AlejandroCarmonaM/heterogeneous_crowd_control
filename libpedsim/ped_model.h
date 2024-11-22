@@ -19,6 +19,8 @@
 // #include "ped_agent.h"
 #include "ped_agent_soa.h"
 
+#define FRACTION_GPU (4.0f / 5.0f)
+
 namespace Ped {
 // class Tagent;
 

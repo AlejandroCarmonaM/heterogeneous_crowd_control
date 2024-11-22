@@ -14,6 +14,22 @@ using namespace Ped;
 
 #define FILTER_W 5
 #define FILTER_H 5
+// TODO: CHANGE THIS TO CONSTEXPR
+
+#define BLOCKS_PER_SIZE (SIZE / BLOCK_SIZE_1D)
+#define BLOCKS_PER_SCALED_SIZE (SCALED_SIZE / BLOCK_SIZE_1D)
+
+#define ELEMS_PER_DIVISION (BLOCKS_PER_SIZE * BLOCK_SIZE)
+#define ELEMS_PER_SCALED_DIVISION (BLOCKS_PER_SCALED_SIZE * BLOCK_SIZE)
+
+#define SIZE_GPU_WITHOUT_CEIL (int)(FRACTION_GPU * SIZE * SIZE)
+#define SCALED_SIZE_GPU_WITHOUT_CEIL (int)(FRACTION_GPU * SCALED_SIZED * SCALED_SIZED)
+
+#define SIZE_GPU \
+  SIZE_GPU_WITHOUT_CEIL + (ELEMS_PER_DIVISION - (SIZE_GPU_WITHOUT_CEIL % ELEMS_PER_DIVISION))
+#define SCALED_SIZE_GPU          \
+  SCALED_SIZE_GPU_WITHOUT_CEIL + \
+      (ELEMS_PER_SCALED_DIVISION - (SCALED_SIZE_GPU_WITHOUT_CEIL % ELEMS_PER_SCALED_DIVISION))
 
 /*GLOBAL VARS FOR tickCUDA */
 int* d_agents_x;
@@ -218,14 +234,15 @@ void Ped::Model::setupHeatmapCUDA() {
   cudaMalloc(&d_desired_pos_x, n_agents * sizeof(int));
   cudaMalloc(&d_desired_pos_y, n_agents * sizeof(int));
 
-  cudaMalloc(&d_heatmap, SIZE * SIZE * sizeof(int));
-  cudaMalloc(&d_scaled_heatmap, SCALED_SIZE * SCALED_SIZE * sizeof(int));
-  cudaMalloc(&d_blurred_heatmap, SCALED_SIZE * SCALED_SIZE * sizeof(int));
+  cudaMalloc(&d_heatmap, SIZE_GPU * sizeof(int));
+
+  cudaMalloc(&d_scaled_heatmap, SCALED_SIZE_GPU * sizeof(int));
+  cudaMalloc(&d_blurred_heatmap, SCALED_SIZE_GPU * sizeof(int));
 
   // Initialize device memory to zero
-  cudaMemset(d_heatmap, 0, SIZE * SIZE * sizeof(int));
-  cudaMemset(d_scaled_heatmap, 0, SCALED_SIZE * SCALED_SIZE * sizeof(int));
-  cudaMemset(d_blurred_heatmap, 0, SCALED_SIZE * SCALED_SIZE * sizeof(int));
+  cudaMemset(d_heatmap, 0, SIZE_GPU * sizeof(int));
+  cudaMemset(d_scaled_heatmap, 0, SCALED_SIZE_GPU * sizeof(int));
+  cudaMemset(d_blurred_heatmap, 0, SCALED_SIZE_GPU * sizeof(int));
 }
 
 void Ped::Model::freeHeatmapCUDA() {
@@ -259,7 +276,7 @@ void Ped::Model::freeHeatmapCUDA() {
 
 __global__ void fadeHeatmap(int* heatmap) {
   int idx = blockIdx.x * blockDim.x + threadIdx.x;
-  if (idx < SIZE * SIZE) {
+  if (idx < SIZE_GPU) {
     heatmap[idx] *= 0.80;
   }
 }
