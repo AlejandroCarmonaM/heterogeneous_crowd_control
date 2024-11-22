@@ -35,6 +35,8 @@ class Model {
 
   // Coordinates a time step in the scenario: move all agents by one step (if
   // applicable).
+  // TODO: Some heat on upper left corner for first frame when calling this on uninitiallized
+  // desired_pos
   void tick() {
     std::thread heatmapThread;
     switch (heatmapImpl) {
@@ -42,7 +44,6 @@ class Model {
         updateHeatmapSeq();
         break;
       case PAR_HM:
-        // updateHeatmapCUDA();
         heatmapThread = std::thread(&Ped::Model::updateHeatmapCUDA, this);
         break;
 
@@ -53,67 +54,50 @@ class Model {
 #include <chrono>
 #include <iostream>
 
+    auto cpu_start = std::chrono::high_resolution_clock::now();
+
     switch (impl) {
       case SEQ: {
-        auto start = std::chrono::high_resolution_clock::now();
         agents_soa->seqTick();
-        auto end = std::chrono::high_resolution_clock::now();
-        std::chrono::duration<double> elapsed = end - start;
-        total_tick_time += elapsed.count();
         break;
       }
       case OMP: {
-        auto start = std::chrono::high_resolution_clock::now();
         agents_soa->ompTick();
-        auto end = std::chrono::high_resolution_clock::now();
-        std::chrono::duration<double> elapsed = end - start;
-        total_tick_time += elapsed.count();
         break;
       }
       case PTHREAD: {
-        auto start = std::chrono::high_resolution_clock::now();
         agents_soa->pthreadTick();
-        auto end = std::chrono::high_resolution_clock::now();
-        std::chrono::duration<double> elapsed = end - start;
-        total_tick_time += elapsed.count();
         break;
       }
       case VECTOR: {
-        auto start = std::chrono::high_resolution_clock::now();
         agents_soa->vectorTick();
-        auto end = std::chrono::high_resolution_clock::now();
-        std::chrono::duration<double> elapsed = end - start;
-        total_tick_time += elapsed.count();
         break;
       }
       case CUDA: {
-        auto start = std::chrono::high_resolution_clock::now();
         agents_soa->callTickCUDA();
-        auto end = std::chrono::high_resolution_clock::now();
-        std::chrono::duration<double> elapsed = end - start;
-        total_tick_time += elapsed.count();
         break;
       }
       case COL_PREVENT_SEQ: {
-        auto start = std::chrono::high_resolution_clock::now();
         agents_soa->colPreventSeqTick();
-        auto end = std::chrono::high_resolution_clock::now();
-        std::chrono::duration<double> elapsed = end - start;
-        total_tick_time += elapsed.count();
         break;
       }
       case COL_PREVENT_PAR: {
-        auto start = std::chrono::high_resolution_clock::now();
         agents_soa->colPreventParTick();
-        auto end = std::chrono::high_resolution_clock::now();
-        std::chrono::duration<double> elapsed = end - start;
-        total_tick_time += elapsed.count();
         break;
       }
     }
+
+    auto cpu_end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = cpu_end - cpu_start;
+    total_tick_time += elapsed.count();
+
     if (heatmapImpl == PAR_HM) {
       // sync with the updateHeatmapCUDA calling thread
       heatmapThread.join();
+
+      auto gpu_end = std::chrono::high_resolution_clock::now();
+      std::chrono::duration<double> diff = gpu_end - cpu_end;
+      total_diff += diff.count();
     }
   }
 
@@ -141,6 +125,7 @@ class Model {
 
   TagentSoA* agents_soa = nullptr;
   float total_tick_time = 0.0;
+  float total_diff = 0.0;
   float total_heatmap_seq_time = 0.0;
 
   // The agents in this scenario

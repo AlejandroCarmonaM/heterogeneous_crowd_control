@@ -502,6 +502,7 @@ void Ped::Model::print_gpu_heatmap_avg_timings(int n_steps) {
   float avg_total = total_time_GPU / n_steps;
 
   float avg_tick = total_tick_time / n_steps;
+  float avg_diff = total_diff / n_steps;
 
   // Kernel_name, avg_time (ms)
   cout << "Kernel_name, avg_time (ms)" << endl;
@@ -514,6 +515,7 @@ void Ped::Model::print_gpu_heatmap_avg_timings(int n_steps) {
   cout << "memcpy_blurred_heatmap, " << avg_memcpy_blurred_heatmap << endl;
   cout << "total_time_GPU, " << avg_total << endl;
   cout << "tick_time_CPU, " << avg_tick << endl;
+  cout << "diff_time, " << avg_diff << endl;
 
   // Kernel_name, avg_time (ms)
 }
