@@ -44,6 +44,7 @@ class Model {
         updateHeatmapSeq();
         break;
       case PAR_HM:
+        copyDesiredPosToGPU();
         heatmapThread = std::thread(&Ped::Model::updateHeatmapCUDA, this);
         break;
 
@@ -149,6 +150,7 @@ class Model {
   void freeHeatmapSeq();
 
   void setupHeatmapCUDA();
+  void copyDesiredPosToGPU();
   void updateHeatmapCUDA();
   void freeHeatmapCUDA();
 };

@@ -29,6 +29,10 @@ void __attribute__((weak)) Ped::Model::setupHeatmapCUDA() {
   std::cerr << "Notice: calling a dummy function" << __FUNCTION__ << std::endl;
 }
 
+void __attribute__((weak)) Ped::Model::copyDesiredPosToGPU() {
+  std::cerr << "Notice: calling a dummy function" << __FUNCTION__ << std::endl;
+}
+
 void __attribute__((weak)) Ped::Model::updateHeatmapCUDA() {
   std::cerr << "Notice: calling a dummy function" << __FUNCTION__ << std::endl;
 }

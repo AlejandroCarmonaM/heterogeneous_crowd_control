@@ -428,16 +428,8 @@ cudaEventDestroy(stopTotal);
 }
 */
 
-void Ped::Model::updateHeatmapCUDA() {
-  // KERNEL LAUNCH VARS
-  int blocksPerGrid;
+void Ped::Model::copyDesiredPosToGPU() {
   int n_agents = agents_soa->getNumAgents();
-
-  // TIMING VARS
-  cudaEvent_t startTotal, stopTotal;
-  cudaEventCreate(&startTotal);
-  cudaEventCreate(&stopTotal);
-  cudaEventRecord(startTotal);
 
   // 1) Copy agent positions to GPU
   const int* h_desired_pos_x = agents_soa->getDesiredPosX();
@@ -450,9 +442,20 @@ void Ped::Model::updateHeatmapCUDA() {
   // cudaMemcpy(d_desired_pos_y, h_desired_pos_y, n_agents * sizeof(int), cudaMemcpyHostToDevice);
   // cudaCheckError(cudaGetLastError());
   cudaMemcpy(d_desired_pos_y, h_desired_pos_y, n_agents * sizeof(int), cudaMemcpyHostToDevice);
+}
+
+void Ped::Model::updateHeatmapCUDA() {
+  // KERNEL LAUNCH VARS
+  int blocksPerGrid;
+  int n_agents = agents_soa->getNumAgents();
+
+  // TIMING VARS
+  cudaEvent_t startTotal, stopTotal;
+  cudaEventCreate(&startTotal);
+  cudaEventCreate(&stopTotal);
+  cudaEventRecord(startTotal);
 
   // 2) Launch timed kernels
-
   blocksPerGrid = (SIZE * SIZE + BLOCK_SIZE - 1) / BLOCK_SIZE;
   fadeHeatmap<<<blocksPerGrid, BLOCK_SIZE>>>(d_heatmap);
 
