@@ -20,7 +20,7 @@ Ped::Model::Model(std::vector<Ped::Tagent*> agentsInScenario, IMPLEMENTATION imp
   //                                    agentsInScenario.end());
 
   bool heatmap_cuda = false;
-  if (heatmapImpl == PAR_HM) {
+  if (heatmapImpl == PAR_HM || heatmapImpl == HET_HM) {
     heatmap_cuda = true;
   }
   agents_soa = new TagentSoA(agentsInScenario, heatmap_cuda);
@@ -61,6 +61,10 @@ Ped::Model::Model(std::vector<Ped::Tagent*> agentsInScenario, IMPLEMENTATION imp
     case PAR_HM:
       setupHeatmapCUDA();
       break;
+    case HET_HM:
+      setupHeatmapCUDA();
+      setupHeatmapSeq();
+      break;
     default:
       break;
   }
@@ -86,6 +90,10 @@ Ped::Model::~Model() {
       break;
     case PAR_HM:
       freeHeatmapCUDA();
+      break;
+    case HET_HM:
+      freeHeatmapCUDA();
+      freeHeatmapSeq();
       break;
 
     default:

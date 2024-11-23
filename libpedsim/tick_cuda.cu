@@ -5,31 +5,8 @@
 #include "ped_model.h"
 using namespace Ped;
 
-/*CONSTANTS FOR GAUSSIAN BLUR (Heatmap CUDA) */
-#define BLOCK_SIZE_1D 16
-// warp size (32) multiple which performs the best in our case
-#define BLOCK_SIZE (BLOCK_SIZE_1D * BLOCK_SIZE_1D)
-#define MASK_RADIUS 2
-#define MASK_DIM (2 * MASK_RADIUS + 1)
-
 #define FILTER_W 5
 #define FILTER_H 5
-// TODO: CHANGE THIS TO CONSTEXPR
-
-#define BLOCKS_PER_SIZE (SIZE / BLOCK_SIZE_1D)
-#define BLOCKS_PER_SCALED_SIZE (SCALED_SIZE / BLOCK_SIZE_1D)
-
-#define ELEMS_PER_DIVISION (BLOCKS_PER_SIZE * BLOCK_SIZE)
-#define ELEMS_PER_SCALED_DIVISION (BLOCKS_PER_SCALED_SIZE * BLOCK_SIZE)
-
-#define SIZE_GPU_WITHOUT_CEIL (int)(FRACTION_GPU * SIZE * SIZE)
-#define SCALED_SIZE_GPU_WITHOUT_CEIL (int)(FRACTION_GPU * SCALED_SIZED * SCALED_SIZED)
-
-#define SIZE_GPU \
-  SIZE_GPU_WITHOUT_CEIL + (ELEMS_PER_DIVISION - (SIZE_GPU_WITHOUT_CEIL % ELEMS_PER_DIVISION))
-#define SCALED_SIZE_GPU          \
-  SCALED_SIZE_GPU_WITHOUT_CEIL + \
-      (ELEMS_PER_SCALED_DIVISION - (SCALED_SIZE_GPU_WITHOUT_CEIL % ELEMS_PER_SCALED_DIVISION))
 
 /*GLOBAL VARS FOR tickCUDA */
 int* d_agents_x;
@@ -288,7 +265,7 @@ __global__ void updateHeatmap(const int* pos_x, const int* pos_y, int* heatmap, 
     int x = pos_x[idx];
     int y = pos_y[idx];
 
-    if (x < 0 || x >= SIZE || y < 0 || y >= SIZE) {
+    if (x < 0 || x >= SIZE || y < 0 || y >= SIZE_GPU / SIZE) {
       return;
     }
 
@@ -300,7 +277,7 @@ __global__ void updateHeatmap(const int* pos_x, const int* pos_y, int* heatmap, 
 __global__ void normScaleHeatmap(int* orig_heatmap, int* scaled_heatmap) {
   int idx = blockIdx.x * blockDim.x + threadIdx.x;
 
-  if (idx < SIZE * SIZE) {
+  if (idx < SIZE_GPU) {
     int value = min(orig_heatmap[idx], 255);
     orig_heatmap[idx] = value;
 
@@ -323,7 +300,7 @@ __global__ void gaussianBlur(int* scaled_heatmap, int* blurred_heatmap) {
   __shared__ int shared_mem_tile[BLOCK_SIZE_1D][BLOCK_SIZE_1D];
 
   // Load data to shared memory (only load data for threads that will output a value)
-  if (col < SCALED_SIZE && row < SCALED_SIZE) {
+  if (col < SCALED_SIZE && row < SCALED_SIZE_GPU / SCALED_SIZE) {
     shared_mem_tile[threadIdx.y][threadIdx.x] = scaled_heatmap[row * SCALED_SIZE + col];
   } else {
     shared_mem_tile[threadIdx.y][threadIdx.x] = 0;
@@ -332,7 +309,7 @@ __global__ void gaussianBlur(int* scaled_heatmap, int* blurred_heatmap) {
   __syncthreads();
 
   // Calculate the output value
-  if (col < SCALED_SIZE && row < SCALED_SIZE) {
+  if (col < SCALED_SIZE && row < SCALED_SIZE_GPU / SCALED_SIZE) {
     int sum = 0;
     for (int i_row = -MASK_RADIUS; i_row <= MASK_RADIUS; i_row++) {
       for (int i_col = -MASK_RADIUS; i_col <= MASK_RADIUS; i_col++) {
@@ -350,7 +327,7 @@ __global__ void gaussianBlur(int* scaled_heatmap, int* blurred_heatmap) {
           int global_index_y = row + i_row;
           // Cells outside scenario are not counted (treated as if they were 0)
           if (global_index_x >= 0 && global_index_x < SCALED_SIZE && global_index_y >= 0 &&
-              global_index_y < SCALED_SIZE) {
+              global_index_y < SCALED_SIZE_GPU / SCALED_SIZE) {
             sum += scaled_heatmap[(global_index_y)*SCALED_SIZE + global_index_x] *
                    w[i_row + MASK_RADIUS][i_col + MASK_RADIUS];
           }
@@ -473,26 +450,27 @@ void Ped::Model::updateHeatmapCUDA() {
   cudaEventRecord(startTotal);
 
   // 2) Launch timed kernels
-  blocksPerGrid = (SIZE * SIZE + BLOCK_SIZE - 1) / BLOCK_SIZE;
+  blocksPerGrid = (SIZE_GPU) / BLOCK_SIZE;  // SIZE_GPU is a multiple of BLOCK_SIZE
   fadeHeatmap<<<blocksPerGrid, BLOCK_SIZE>>>(d_heatmap);
 
   blocksPerGrid = (n_agents + BLOCK_SIZE - 1) / BLOCK_SIZE;
   updateHeatmap<<<blocksPerGrid, BLOCK_SIZE>>>(d_desired_pos_x, d_desired_pos_y, d_heatmap,
                                                n_agents);
 
-  blocksPerGrid = (SIZE * SIZE + BLOCK_SIZE - 1) / BLOCK_SIZE;
+  blocksPerGrid = (SIZE_GPU) / BLOCK_SIZE;
   normScaleHeatmap<<<blocksPerGrid, BLOCK_SIZE>>>(d_heatmap, d_scaled_heatmap);
 
   // Timing for gaussianBlur kernel
   dim3 blockDim(BLOCK_SIZE_1D, BLOCK_SIZE_1D);
-  dim3 gridDim((SCALED_SIZE + BLOCK_SIZE_1D - 1) / BLOCK_SIZE_1D,
-               (SCALED_SIZE + BLOCK_SIZE_1D - 1) / BLOCK_SIZE_1D);
+  // ncols = SCALED_SIZE_GPU / BLOCK_SIZE_1D
+  // nrows = SCALED_SIZE_GPU / SCALED_SIZE
+  dim3 gridDim((SCALED_SIZE / BLOCK_SIZE_1D), (SCALED_SIZE_GPU / ELEMS_PER_DIVISION));
 
   gaussianBlur<<<gridDim, blockDim>>>(d_scaled_heatmap, d_blurred_heatmap);
   // 3) Copy back blurred heatmap to host
   //  cudaMemcpy(h_blurred_heatmap, d_blurred_heatmap, SCALED_SIZE * SCALED_SIZE * sizeof(int),
   //  cudaMemcpyDeviceToHost); cudaCheckError(cudaGetLastError());
-  cudaMemcpy(h_blurred_heatmap, d_blurred_heatmap, SCALED_SIZE * SCALED_SIZE * sizeof(int),
+  cudaMemcpy(h_blurred_heatmap, d_blurred_heatmap, SCALED_SIZE_GPU * sizeof(int),
              cudaMemcpyDeviceToHost);
 
   // 4) Finish GPU Timing

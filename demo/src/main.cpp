@@ -68,6 +68,8 @@ int main(int argc, char* argv[]) {
 
         } else if (strcmp(&argv[i][2], "heatmap_par") == 0) {
           heatmap = Ped::HEATMAP_IMPL::PAR_HM;
+        } else if (strcmp(&argv[i][2], "heatmap_het") == 0) {
+          heatmap = Ped::HEATMAP_IMPL::HET_HM;
 
         } else if (strcmp(&argv[i][2], "help") == 0) {
           printHelp(argv[0]);

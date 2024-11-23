@@ -19,7 +19,7 @@
 // #include "ped_agent.h"
 #include "ped_agent_soa.h"
 
-#define FRACTION_GPU (4.0f / 5.0f)
+#define FRACTION_GPU (0.0f)
 
 namespace Ped {
 // class Tagent;
@@ -27,7 +27,7 @@ namespace Ped {
 // The implementation modes for Assignment 1 + 2 + 3:
 // chooses which implementation to use for tick()
 enum IMPLEMENTATION { SEQ, OMP, PTHREAD, CUDA, VECTOR, COL_PREVENT_SEQ, COL_PREVENT_PAR };
-enum HEATMAP_IMPL { SEQ_HM, PAR_HM, NONE };
+enum HEATMAP_IMPL { SEQ_HM, PAR_HM, HET_HM, NONE };
 
 class Model {
  public:
@@ -48,6 +48,11 @@ class Model {
       case PAR_HM:
         copyDesiredPosToGPU();
         heatmapThread = std::thread(&Ped::Model::updateHeatmapCUDA, this);
+        break;
+      case HET_HM:
+        copyDesiredPosToGPU();
+        heatmapThread = std::thread(&Ped::Model::updateHeatmapCUDA, this);
+        updateHeatmapSeq();
         break;
 
       default:
@@ -136,12 +141,38 @@ class Model {
 
 #define SIZE 1024
 #define CELLSIZE 5
-#define SCALED_SIZE SIZE* CELLSIZE
+#define SCALED_SIZE (SIZE * CELLSIZE)
+
+/*CONSTANTS FOR GPU-CPU LOAD BALANCING*/
+// TODO: CHANGE THIS TO CONSTEXPR
+
+/*CONSTANTS FOR GAUSSIAN BLUR (Heatmap CUDA) */
+#define BLOCK_SIZE_1D 16
+// warp size (32) multiple which performs the best in our case
+#define BLOCK_SIZE (BLOCK_SIZE_1D * BLOCK_SIZE_1D)
+#define MASK_RADIUS 2
+#define MASK_DIM (2 * MASK_RADIUS + 1)
+
+#define BLOCKS_PER_SIZE (SIZE / BLOCK_SIZE_1D)
+#define BLOCKS_PER_SCALED_SIZE (SCALED_SIZE / BLOCK_SIZE_1D)
+
+#define ELEMS_PER_DIVISION (BLOCKS_PER_SIZE * BLOCK_SIZE)
+#define ELEMS_PER_SCALED_DIVISION (BLOCKS_PER_SCALED_SIZE * BLOCK_SIZE)
+
+#define SIZE_GPU_WITHOUT_CEIL (int)(FRACTION_GPU * SIZE * SIZE)
+#define SCALED_SIZE_GPU_WITHOUT_CEIL (int)(FRACTION_GPU * SCALED_SIZE * SCALED_SIZE)
+
+#define SIZE_GPU \
+  SIZE_GPU_WITHOUT_CEIL + (ELEMS_PER_DIVISION - (SIZE_GPU_WITHOUT_CEIL % ELEMS_PER_DIVISION))
+#define SCALED_SIZE_GPU          \
+  SCALED_SIZE_GPU_WITHOUT_CEIL + \
+      (ELEMS_PER_SCALED_DIVISION - (SCALED_SIZE_GPU_WITHOUT_CEIL % ELEMS_PER_SCALED_DIVISION))
+
   // The heatmap representing the density of agents
-  int** heatmap = nullptr;
+  int* hm = nullptr;
 
   // The scaled heatmap that fits to the view
-  int** scaled_heatmap = nullptr;
+  int* shm = nullptr;
 
   // The final heatmap: blurred and scaled to fit the view
   int** blurred_heatmap = nullptr;

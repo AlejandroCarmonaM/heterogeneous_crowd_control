@@ -8,23 +8,21 @@
 #include "ped_model.h"
 using namespace std;
 
+#define SIZE_CPU (SIZE * SIZE - SIZE_GPU)
+#define SCALED_SIZE_CPU (SCALED_SIZE * SCALED_SIZE - SCALED_SIZE_GPU)
+#define FIRST_ROW_CPU (SIZE_GPU / SIZE)
+#define FIRST_SCALED_ROW_CPU (SCALED_SIZE_GPU / SCALED_SIZE)
+
 void Ped::Model::setupHeatmapSeq() {
   cout << "Setting up heatmap" << endl;
-  int* hm = (int*)calloc(SIZE * SIZE, sizeof(int));
-  int* shm = (int*)malloc(SCALED_SIZE * SCALED_SIZE * sizeof(int));
-  // int* bhm = (int*)malloc(SCALED_SIZE * SCALED_SIZE * sizeof(int));
-
-  heatmap = (int**)malloc(SIZE * sizeof(int*));
-
-  scaled_heatmap = (int**)malloc(SCALED_SIZE * sizeof(int*));
-  // blurred_heatmap = (int**)malloc(SCALED_SIZE * sizeof(int*));
-
-  for (int i = 0; i < SIZE; i++) {
-    heatmap[i] = hm + SIZE * i;
-  }
-  for (int i = 0; i < SCALED_SIZE; i++) {
-    scaled_heatmap[i] = shm + SCALED_SIZE * i;
-    // blurred_heatmap[i] = bhm + SCALED_SIZE * i;
+  hm = (int*)calloc(SIZE_CPU, sizeof(int));
+  shm = (int*)malloc(SCALED_SIZE_CPU * sizeof(int));
+  if (heatmapImpl == HEATMAP_IMPL::SEQ_HM) {
+    int* bhm = (int*)malloc(SIZE_CPU * sizeof(int));
+    blurred_heatmap = (int**)malloc(SCALED_SIZE * sizeof(int*));
+    for (int i = 0; i < SCALED_SIZE; i++) {
+      blurred_heatmap[i] = bhm + i * SCALED_SIZE;
+    }
   }
 }
 
@@ -36,9 +34,9 @@ void Ped::Model::updateHeatmapSeq() {
    * multiplying it by 0.80. This simulates the fading of heat over time, ensuring that old data
    * gradually diminishes.*/
   for (int x = 0; x < SIZE; x++) {
-    for (int y = 0; y < SIZE; y++) {
+    for (int y = FIRST_ROW_CPU; y < SIZE; y++) {
       // heat fades
-      heatmap[y][x] *= 0.80;
+      hm[y * SIZE + x] = hm[y * SIZE + x] * 0.80;
     }
   }
 
@@ -54,18 +52,21 @@ void Ped::Model::updateHeatmapSeq() {
     int x = desired_pos_x[i];
     int y = desired_pos_y[i];
 
-    if (x < 0 || x >= SIZE || y < 0 || y >= SIZE) {
+    if (x < 0 || x >= SIZE || y < FIRST_ROW_CPU || y >= SIZE) {
       continue;
     }
 
     // intensify heat for better color results
-    heatmap[y][x] += 40;
+    // heatmap[y][x] += 40;
+    hm[y * SIZE + x] += 40;
   }
 
   /*2.1. Normalizing pixel values*/
   for (int x = 0; x < SIZE; x++) {
-    for (int y = 0; y < SIZE; y++) {
-      heatmap[y][x] = heatmap[y][x] < 255 ? heatmap[y][x] : 255;
+    for (int y = FIRST_ROW_CPU; y < SIZE; y++) {
+      // heat fades
+      // heatmap[y][x] = heatmap[y][x] < 255 ? heatmap[y][x] : 255;
+      hm[y * SIZE + x] = hm[y * SIZE + x] < 255 ? hm[y * SIZE + x] : 255;
     }
   }
 
@@ -73,12 +74,14 @@ void Ped::Model::updateHeatmapSeq() {
   /*Functionality: This nested loop scales up the heatmap by a factor defined by CELLSIZE. Each cell
    * in the original heatmap is expanded into a CELLSIZE x CELLSIZE block in the scaled_heatmap,
    * duplicating the heat value across this block.*/
-  for (int y = 0; y < SIZE; y++) {
+  for (int y = FIRST_ROW_CPU; y < SIZE; y++) {
     for (int x = 0; x < SIZE; x++) {
-      int value = heatmap[y][x];
+      // int value = heatmap[y][x];
+      int value = hm[y * SIZE + x];
       for (int cellY = 0; cellY < CELLSIZE; cellY++) {
         for (int cellX = 0; cellX < CELLSIZE; cellX++) {
-          scaled_heatmap[y * CELLSIZE + cellY][x * CELLSIZE + cellX] = value;
+          // scaled_heatmap[y * CELLSIZE + cellY][x * CELLSIZE + cellX] = value;
+          shm[(y * CELLSIZE + cellY) * SCALED_SIZE + x * CELLSIZE + cellX] = value;
         }
       }
     }
@@ -96,11 +99,12 @@ void Ped::Model::updateHeatmapSeq() {
    * then normalizes it by dividing by WEIGHTSUM. The result is stored in blurred_heatmap, combining
    * the heat value with a color code.*/
   for (int i = 2; i < SCALED_SIZE - 2; i++) {
-    for (int j = 2; j < SCALED_SIZE - 2; j++) {
+    for (int j = FIRST_SCALED_ROW_CPU + 2; j < SCALED_SIZE - 2; j++) {
       int sum = 0;
       for (int k = -2; k < 3; k++) {
         for (int l = -2; l < 3; l++) {
-          sum += w[2 + k][2 + l] * scaled_heatmap[i + k][j + l];
+          // sum += w[2 + k][2 + l] * scaled_heatmap[i + k][j + l];
+          sum += w[2 + k][2 + l] * shm[(i + k) * SCALED_SIZE + j + l];
         }
       }
       int value = sum / WEIGHTSUM;
@@ -120,10 +124,10 @@ int Ped::Model::getHeatmapSize() const { return SCALED_SIZE; }
 
 void Ped::Model::freeHeatmapSeq() {
   cout << "Freeing heatmap cpu" << endl;
-  free(heatmap[0]);
-  free(heatmap);
-  free(scaled_heatmap[0]);
-  free(scaled_heatmap);
-  free(blurred_heatmap[0]);
-  free(blurred_heatmap);
+  free(hm);
+  free(shm);
+  if (heatmapImpl == HEATMAP_IMPL::SEQ_HM) {
+    free(blurred_heatmap[0]);
+    free(blurred_heatmap);
+  }
 }
