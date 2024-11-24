@@ -27,12 +27,14 @@
 
 void printHelp(char* program_name) {
   cout << "Usage: " << program_name
-       << " [-h|--help] [--timing-mode]  [--heatmap] "
+       << " [-h|--help] [--timing-mode]  [--heatmap_(seq,par,het)] "
           "[--implementation=(CUDA,vector,OMP,pthreads,sequential,col_prevent_seq,col_prevent_par)]"
           " [-n(NUM_THREADS)] SCENARIO_FILE"
        << endl;
-  cout << "e.g.: " << program_name
-       << " --timing-mode --heatmap --implementation=OMP -n12 demo/commute_200000.xml" << endl;
+  cout
+      << "e.g.: " << program_name
+      << " --timing-mode --heatmap_het --implementation=col_prevent_par -n4 demo/commute_200000.xml"
+      << endl;
   cout << "(NUM_THREADS must be > 0 and < " << Ped::TagentSoA::MAX_THREADS << ")" << endl;
 }
 
