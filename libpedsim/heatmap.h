@@ -33,7 +33,7 @@ class Heatmap {
         setupHeatmapCUDA();
         break;
       case HET_HM:
-        distributeRows(960.0f / 1024.0f);
+        distributeRows(832.0f / 1024.0f);
         setupHeatmapSeq();
         setupHeatmapCUDA();
         break;
@@ -76,11 +76,21 @@ class Heatmap {
     gpu_rows = ceil(round(fraction_gpu * LENGTH) / BLOCK_LENGTH) * BLOCK_LENGTH;
     gpu_scaled_rows = CELL_SIZE * gpu_rows;
 
-    cpu_rows = LENGTH - gpu_rows;
-    cpu_scaled_rows = CELL_SIZE * cpu_rows;
+    if (gpu_rows == LENGTH) {
+      std::cout << "Heatmap GPU rows [0:" << gpu_rows - 1 << "]" << std::endl;
+    } else if (gpu_rows == 0) {
+      cpu_start = 0;
+      cpu_scaled_start = 0;
+      std::cout << "Heatmap CPU rows [" << cpu_start << ":" << LENGTH << "] (" << LENGTH - cpu_start
+                << " rows for CPU)" << std::endl;
+    } else {
+      cpu_start = gpu_rows - 1;  // Compute 1 extra row
+      cpu_scaled_start = CELL_SIZE * cpu_start;
 
-    std::cout << "Heatmap GPU rows: " << gpu_rows << std::endl;
-    std::cout << "Heatmap CPU rows: " << cpu_rows << std::endl;
+      std::cout << "Heatmap GPU rows [0:" << gpu_rows - 1 << "]" << std::endl;
+      std::cout << "Heatmap CPU rows [" << cpu_start << ":" << LENGTH << "] (" << LENGTH - cpu_start
+                << " rows for CPU)" << std::endl;
+    }
   }
 
   void updateHeatmapSeq();
@@ -102,7 +112,7 @@ class Heatmap {
   Ped::TagentSoA* agents_soa;
 
   int gpu_rows, gpu_scaled_rows;
-  int cpu_rows, cpu_scaled_rows;
+  int cpu_start, cpu_scaled_start;
 
   int* bhm = nullptr;
   int** blurred_heatmap = nullptr;
@@ -125,23 +135,4 @@ class Heatmap {
 
   void freeHeatmapSeq();
   void freeHeatmapCUDA();
-
-  constexpr int hmIdx(int row, int col) {
-    int res = (row - gpu_rows) * LENGTH + col;
-    // if (res < 0 || res >= cpu_rows * LENGTH) {
-    //   std::cout << "ERROR input " << row << " " << col << " output " << row - gpu_rows << col
-    //             << " -> " << res << std::endl;
-    // }
-    return res;
-  }
-
-  constexpr int shmIdx(int row, int col) {
-    int res = (row - gpu_scaled_rows) * SCALED_LENGTH + col;
-    // if (res < 0 || res >= cpu_scaled_rows * SCALED_LENGTH) {
-    //   std::cout << "SCALED ERROR input " << row << " " << col << " output " << row -
-    //   gpu_scaled_rows
-    //             << col << " -> " << res << std::endl;
-    // }
-    return res;
-  }
 };

@@ -339,8 +339,9 @@ void Heatmap::updateHeatmapCUDA() {
                                                          gpu_scaled_rows));
 
   // Copy back blurred heatmap to host
+  // -2 pixels to not write unknown data
   CUDA_TIME(ms_memcpy_blurred_heatmap,
-            cudaMemcpy(bhm, d_blurred_heatmap, gpu_scaled_rows * SCALED_LENGTH * sizeof(int),
+            cudaMemcpy(bhm, d_blurred_heatmap, (gpu_scaled_rows - 2) * SCALED_LENGTH * sizeof(int),
                        cudaMemcpyDeviceToHost));
   cudaCheckError(cudaGetLastError());
 

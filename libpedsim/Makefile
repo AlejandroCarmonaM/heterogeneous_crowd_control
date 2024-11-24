@@ -11,7 +11,7 @@ endif
 
 NVCC = nvcc
 # SOURCES_CXX = ped_waypoint.cpp ped_agent.cpp ped_model.cpp ped_tree.cpp heatmap_seq.cpp ped_agent_soa.cpp
-SOURCES_CXX = ped_waypoint.cpp ped_agent.cpp ped_model.cpp ped_agent_soa.cpp collision_checker.cpp heatmap_seq.cpp 
+SOURCES_CXX = ped_waypoint.cpp ped_agent.cpp ped_model.cpp ped_agent_soa.cpp collision_checker.cpp heatmap_seq.cpp
 OBJECTS_CXX = $(SOURCES_CXX:.cpp=.cxx.o)
 
 SOURCES_CU = tick_cuda.cu

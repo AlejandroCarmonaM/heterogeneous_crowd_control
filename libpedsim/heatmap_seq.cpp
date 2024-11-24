@@ -16,21 +16,31 @@ const int W[5][5] = {
 
 float total_heatmap_seq_ms;
 
-int* hm;
-int* shm;
+// TODO: Free this
+int** heatmap;
+int** scaled_heatmap;
 
 void Heatmap::setupHeatmapSeq() {
-  hm = new int[cpu_rows * LENGTH];
-  shm = new int[cpu_scaled_rows * SCALED_LENGTH];
+  int* hm = new int[(LENGTH - cpu_start) * LENGTH];
+  heatmap = new int*[LENGTH];
+  for (int i = cpu_start; i < LENGTH; i++) {
+    heatmap[i] = hm + LENGTH * (i - cpu_start);
+  }
+
+  int* shm = new int[(SCALED_LENGTH - cpu_scaled_start) * SCALED_LENGTH];
+  scaled_heatmap = new int*[SCALED_LENGTH];
+  for (int i = cpu_scaled_start; i < SCALED_LENGTH; i++) {
+    scaled_heatmap[i] = shm + SCALED_LENGTH * (i - cpu_scaled_start);
+  }
 }
 
 void Heatmap::updateHeatmapSeq() {
   auto start = std::chrono::high_resolution_clock::now();
 
   for (int x = 0; x < LENGTH; x++) {
-    for (int y = gpu_rows; y < LENGTH; y++) {
+    for (int y = cpu_start; y < LENGTH; y++) {
       // heat fades
-      hm[hmIdx(y, x)] *= 0.80;
+      heatmap[y][x] *= 0.80;
     }
   }
 
@@ -42,37 +52,42 @@ void Heatmap::updateHeatmapSeq() {
     int x = desired_pos_x[i];
     int y = desired_pos_y[i];
 
-    if (x < 0 || x >= LENGTH || y < gpu_rows || y >= LENGTH) {
+    if (x < 0 || x >= LENGTH || y < cpu_start || y >= LENGTH) {
       continue;
     }
 
     // intensify heat for better color results
-    hm[hmIdx(y, x)] += 40;
+    heatmap[y][x] += 40;
   }
 
   for (int x = 0; x < LENGTH; x++) {
-    for (int y = gpu_rows; y < LENGTH; y++) {
-      hm[hmIdx(y, x)] = hm[hmIdx(y, x)] < 255 ? hm[hmIdx(y, x)] : 255;
+    for (int y = cpu_start; y < LENGTH; y++) {
+      heatmap[y][x] = heatmap[y][x] < 255 ? heatmap[y][x] : 255;
     }
   }
 
-  for (int y = gpu_rows; y < LENGTH; y++) {
+  for (int y = cpu_start; y < LENGTH; y++) {
     for (int x = 0; x < LENGTH; x++) {
-      int value = hm[hmIdx(y, x)];
+      int value = heatmap[y][x];
       for (int cellY = 0; cellY < CELL_SIZE; cellY++) {
         for (int cellX = 0; cellX < CELL_SIZE; cellX++) {
-          shm[shmIdx(y * CELL_SIZE + cellY, x * CELL_SIZE + cellX)] = value;
+          // int idx_y = y * CELL_SIZE + cellY;
+          // int idx_x = x * CELL_SIZE + cellX;
+          // if (idx_y < 0 || idx_y >= )
+          // if (y)
+          scaled_heatmap[y * CELL_SIZE + cellY][x * CELL_SIZE + cellX] = value;
         }
       }
     }
   }
 
-  for (int i = gpu_scaled_rows + 2; i < SCALED_LENGTH - 2; i++) {
+  for (int i = cpu_scaled_start + 2 + 1; i < SCALED_LENGTH - 2;
+       i++) {  // +1 to not write on top of GPU
     for (int j = 2; j < SCALED_LENGTH - 2; j++) {
       int sum = 0;
       for (int k = -2; k < 3; k++) {
         for (int l = -2; l < 3; l++) {
-          sum += W[2 + k][2 + l] * shm[shmIdx(i + k, j + l)];
+          sum += W[2 + k][2 + l] * scaled_heatmap[i + k][j + l];
         }
       }
       int value = sum / WEIGHTSUM;
@@ -87,11 +102,12 @@ void Heatmap::updateHeatmapSeq() {
 
 void Heatmap::printHeatmapSeqTimings(int n_steps) {
   cout << "\nHEATMAP SEQ TIMINGS" << endl;
-  // cout << "\nTotal time: " << total_heatmap_seq_ms << " ms" << endl;
   cout << "Average time: " << total_heatmap_seq_ms / n_steps << " ms\n" << endl;
 }
 
 void Heatmap::freeHeatmapSeq() {
-  delete[] hm;
-  delete[] shm;
+  delete[] heatmap[0];
+  delete[] heatmap;
+  delete[] scaled_heatmap[0];
+  delete[] scaled_heatmap;
 }
