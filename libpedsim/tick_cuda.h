@@ -25,19 +25,23 @@ void __attribute__((weak)) freeCUDA() {
   std::cerr << "Notice: calling a dummy function" << __FUNCTION__ << std::endl;
 }
 
-void __attribute__((weak)) Ped::Model::setupHeatmapCUDA() {
+void __attribute__((weak)) Heatmap::setupHeatmapCUDA() {
   std::cerr << "Notice: calling a dummy function" << __FUNCTION__ << std::endl;
 }
 
-void __attribute__((weak)) Ped::Model::copyDesiredPosToGPU() {
+void __attribute__((weak)) Heatmap::copyDesiredPosToGPU() {
   std::cerr << "Notice: calling a dummy function" << __FUNCTION__ << std::endl;
 }
 
-void __attribute__((weak)) Ped::Model::updateHeatmapCUDA() {
+void __attribute__((weak)) Heatmap::updateHeatmapCUDA() {
   std::cerr << "Notice: calling a dummy function" << __FUNCTION__ << std::endl;
 }
 
-void __attribute__((weak)) Ped::Model::freeHeatmapCUDA() {
+void __attribute__((weak)) Heatmap::freeHeatmapCUDA() {
+  std::cerr << "Notice: calling a dummy function" << __FUNCTION__ << std::endl;
+}
+
+void __attribute__((weak)) Heatmap::printHeatmapCUDATimings(int n_steps) {
   std::cerr << "Notice: calling a dummy function" << __FUNCTION__ << std::endl;
 }
 

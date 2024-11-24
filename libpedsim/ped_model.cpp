@@ -14,16 +14,10 @@
 #include "tick_cuda.h"
 
 Ped::Model::Model(std::vector<Ped::Tagent*> agentsInScenario, IMPLEMENTATION impl, int n_threads,
-                  HEATMAP_IMPL heatmapImpl)
-    : impl(impl), n_threads(n_threads), heatmapImpl(heatmapImpl) {
-  // agents = std::vector<Ped::Tagent*>(agentsInScenario.begin(),
-  //                                    agentsInScenario.end());
-
-  bool heatmap_cuda = false;
-  if (heatmapImpl == PAR_HM || heatmapImpl == HET_HM) {
-    heatmap_cuda = true;
-  }
-  agents_soa = new TagentSoA(agentsInScenario, heatmap_cuda);
+                  Heatmap::HEATMAP_IMPL heatmap_impl)
+    : impl(impl), n_threads(n_threads), heatmap_impl(heatmap_impl) {
+  agents_soa = new TagentSoA(agentsInScenario,
+                             (heatmap_impl == Heatmap::PAR_HM || heatmap_impl == Heatmap::HET_HM));
 
   if (isCheckingCollisions() && agents_soa->printCollisions()) {
     cerr << "ERROR: Collisions found in initial positions" << endl;
@@ -54,19 +48,8 @@ Ped::Model::Model(std::vector<Ped::Tagent*> agentsInScenario, IMPLEMENTATION imp
       break;
   }
 
-  switch (heatmapImpl) {
-    case SEQ_HM:
-      setupHeatmapSeq();
-      break;
-    case PAR_HM:
-      setupHeatmapCUDA();
-      break;
-    case HET_HM:
-      setupHeatmapCUDA();
-      setupHeatmapSeq();
-      break;
-    default:
-      break;
+  if (heatmap_impl != Heatmap::NONE) {
+    heatmap = new Heatmap(heatmap_impl, agents_soa);
   }
 }
 
@@ -84,19 +67,11 @@ Ped::Model::~Model() {
     agents_soa = nullptr;
   }
 
-  switch (heatmapImpl) {
-    case SEQ_HM:
-      freeHeatmapSeq();
-      break;
-    case PAR_HM:
-      freeHeatmapCUDA();
-      break;
-    case HET_HM:
-      freeHeatmapCUDA();
-      freeHeatmapSeq();
-      break;
+  delete heatmap;
+  heatmap = nullptr;
+}
 
-    default:
-      break;
-  }
+void Ped::Model::print_diff_timings(int n_steps) {
+  cout << "\nTotal time diff: " << total_diff << " ms" << endl;
+  cout << "Average time diff: " << total_diff / n_steps << " ms\n" << endl;
 }

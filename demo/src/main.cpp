@@ -41,7 +41,7 @@ int main(int argc, char* argv[]) {
 
   bool timing_mode = false;
   int n_threads = 1;
-  Ped::HEATMAP_IMPL heatmap = Ped::HEATMAP_IMPL::NONE;
+  Heatmap::HEATMAP_IMPL heatmap = Heatmap::NONE;
 
   const char* impl_arg = "implementation=";
   string impl_str = "sequential";
@@ -64,12 +64,13 @@ int main(int argc, char* argv[]) {
           timing_mode = true;
 
         } else if (strcmp(&argv[i][2], "heatmap_seq") == 0) {
-          heatmap = Ped::HEATMAP_IMPL::SEQ_HM;
+          heatmap = Heatmap::SEQ_HM;
 
         } else if (strcmp(&argv[i][2], "heatmap_par") == 0) {
-          heatmap = Ped::HEATMAP_IMPL::PAR_HM;
+          heatmap = Heatmap::PAR_HM;
+
         } else if (strcmp(&argv[i][2], "heatmap_het") == 0) {
-          heatmap = Ped::HEATMAP_IMPL::HET_HM;
+          heatmap = Heatmap::HET_HM;
 
         } else if (strcmp(&argv[i][2], "help") == 0) {
           printHelp(argv[0]);
@@ -148,8 +149,8 @@ int main(int argc, char* argv[]) {
   PedSimulation* simulation = new PedSimulation(model, mainwindow);
 
   if (!timing_mode) {
-    cout << "Demo setup complete, running " << impl_str << " implementation"
-         << " with " << n_threads << " threads" << endl;
+    cout << "Demo setup complete, running " << impl_str << " implementation" << " with "
+         << n_threads << " threads" << endl;
   }
   int retval = 0;
   // Timing of simulation
@@ -174,13 +175,21 @@ int main(int argc, char* argv[]) {
     // Header for CSV Format -> Fields={IMPLEMENTATION,NUM_THREADS,TIME(s)}
     // cout << "IMPLEMENTATION,NUM_THREADS,TIME(s)" << endl;
     cout << impl_str << "," << n_threads << "," << elapsed_seconds.count() << endl;
-    if (heatmap == Ped::HEATMAP_IMPL::PAR_HM) {
-      model.print_gpu_heatmap_avg_timings(maxNumberOfStepsToSimulate);
-    }
-    if (heatmap == Ped::HEATMAP_IMPL::SEQ_HM) {
-      model.print_seq_heatmap_timings(maxNumberOfStepsToSimulate);
-    }
 
+    switch (heatmap) {
+      case Heatmap::SEQ_HM:
+        model.print_seq_heatmap_timings(maxNumberOfStepsToSimulate);
+      case Heatmap::PAR_HM:
+        model.print_gpu_heatmap_avg_timings(maxNumberOfStepsToSimulate);
+        break;
+      case Heatmap::HET_HM:
+        model.print_seq_heatmap_timings(maxNumberOfStepsToSimulate);
+        model.print_gpu_heatmap_avg_timings(maxNumberOfStepsToSimulate);
+        model.print_diff_timings(maxNumberOfStepsToSimulate);
+        break;
+      case Heatmap::NONE:
+        break;
+    }
   } else {
     cout << "Time: " << elapsed_seconds.count() << " seconds." << endl;
   }
