@@ -33,7 +33,8 @@ void __attribute__((weak)) Heatmap::copyDesiredPosToGPU() {
   std::cerr << "Notice: calling a dummy function" << __FUNCTION__ << std::endl;
 }
 
-void __attribute__((weak)) Heatmap::updateHeatmapCUDA() {
+void __attribute__((weak)) Heatmap::updateHeatmapCUDA(
+    std::chrono::_V2::system_clock::time_point* end) {
   std::cerr << "Notice: calling a dummy function" << __FUNCTION__ << std::endl;
 }
 

@@ -106,8 +106,8 @@ void Heatmap::printHeatmapSeqTimings(int n_steps) {
 }
 
 void Heatmap::freeHeatmapSeq() {
-  delete[] heatmap[0];
+  delete[] heatmap[cpu_start];
   delete[] heatmap;
-  delete[] scaled_heatmap[0];
+  delete[] scaled_heatmap[cpu_scaled_start];
   delete[] scaled_heatmap;
 }

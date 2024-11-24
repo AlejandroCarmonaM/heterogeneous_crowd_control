@@ -145,7 +145,7 @@ int main(int argc, char* argv[]) {
   MainWindow mainwindow(model);
 
   // Default number of steps to simulate
-  const int maxNumberOfStepsToSimulate = 1000;
+  const int maxNumberOfStepsToSimulate = 500;
   PedSimulation* simulation = new PedSimulation(model, mainwindow);
 
   if (!timing_mode) {
@@ -185,11 +185,11 @@ int main(int argc, char* argv[]) {
       case Heatmap::HET_HM:
         model.print_seq_heatmap_timings(maxNumberOfStepsToSimulate);
         model.print_gpu_heatmap_avg_timings(maxNumberOfStepsToSimulate);
-        model.print_diff_timings(maxNumberOfStepsToSimulate);
         break;
       case Heatmap::NONE:
         break;
     }
+    model.print_diff_timings(maxNumberOfStepsToSimulate);
   } else {
     cout << "Time: " << elapsed_seconds.count() << " seconds." << endl;
   }

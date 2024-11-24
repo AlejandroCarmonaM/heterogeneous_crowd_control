@@ -34,77 +34,7 @@ class Model {
   // TODO: Some heat on upper left corner for first frame when calling this on uninitiallized
   // desired_pos
 
-  void tick() {
-    std::thread heatmap_thread;
-
-    // TODO: Make this cleaner
-    static bool first = true;
-    if (!first) {
-      switch (heatmap_impl) {
-        case Heatmap::SEQ_HM:
-          heatmap->updateHeatmapSeq();
-          break;
-        case Heatmap::PAR_HM:
-          heatmap->copyDesiredPosToGPU();
-          heatmap_thread = std::thread(&Heatmap::updateHeatmapCUDA, heatmap);
-          break;
-        case Heatmap::HET_HM:
-          heatmap->copyDesiredPosToGPU();
-          heatmap_thread = std::thread(&Heatmap::updateHeatmapCUDA, heatmap);
-          heatmap->updateHeatmapSeq();
-          break;
-        case Heatmap::NONE:
-          break;
-      }
-    }
-
-    switch (impl) {
-      case SEQ: {
-        agents_soa->seqTick();
-        break;
-      }
-      case OMP: {
-        agents_soa->ompTick();
-        break;
-      }
-      case PTHREAD: {
-        agents_soa->pthreadTick();
-        break;
-      }
-      case VECTOR: {
-        agents_soa->vectorTick();
-        break;
-      }
-      case CUDA: {
-        agents_soa->callTickCUDA();
-        break;
-      }
-      case COL_PREVENT_SEQ: {
-        agents_soa->colPreventSeqTick();
-        break;
-      }
-      case COL_PREVENT_PAR: {
-        agents_soa->colPreventParTick();
-        break;
-      }
-    }
-
-    if (!first) {
-      if (heatmap_impl == Heatmap::PAR_HM || heatmap_impl == Heatmap::HET_HM) {
-        auto cpu_end = std::chrono::high_resolution_clock::now();
-
-        heatmap_thread.join();
-
-        auto gpu_end = std::chrono::high_resolution_clock::now();
-        auto diff = std::chrono::duration_cast<std::chrono::milliseconds>(gpu_end - cpu_end);
-        total_diff += diff.count();
-      }
-    }
-
-    if (first) {
-      first = false;
-    }
-  }
+  void tick();
 
   TagentSoA* getAgentSoA() const { return agents_soa; };
 
@@ -132,7 +62,8 @@ class Model {
   int n_threads;
 
   TagentSoA* agents_soa = nullptr;
-  float total_diff = 0.0;
+  uint64_t total_cpu_time = 0;
+  uint64_t total_gpu_time = 0;
 
   Heatmap* heatmap = nullptr;
 };

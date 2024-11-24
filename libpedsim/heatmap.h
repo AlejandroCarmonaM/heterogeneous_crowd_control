@@ -2,6 +2,7 @@
 
 #include <cuda_runtime.h>
 
+#include <chrono>
 #include <cmath>
 #include <iostream>
 
@@ -94,7 +95,7 @@ class Heatmap {
   }
 
   void updateHeatmapSeq();
-  void updateHeatmapCUDA();
+  void updateHeatmapCUDA(std::chrono::_V2::system_clock::time_point* end);
 
   int const* const* getHeatmap() { return blurred_heatmap; }
 

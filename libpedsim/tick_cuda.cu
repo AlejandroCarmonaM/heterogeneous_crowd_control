@@ -314,7 +314,7 @@ void Heatmap::copyDesiredPosToGPU() {
                                                 n_agents * sizeof(int), cudaMemcpyHostToDevice));
 }
 
-void Heatmap::updateHeatmapCUDA() {
+void Heatmap::updateHeatmapCUDA(std::chrono::_V2::system_clock::time_point* end) {
   // KERNEL LAUNCH VARS
   int blocksPerGrid;
   int n_agents = agents_soa->getNumAgents();
@@ -344,6 +344,8 @@ void Heatmap::updateHeatmapCUDA() {
             cudaMemcpy(bhm, d_blurred_heatmap, (gpu_scaled_rows - 2) * SCALED_LENGTH * sizeof(int),
                        cudaMemcpyDeviceToHost));
   cudaCheckError(cudaGetLastError());
+
+  *end = std::chrono::high_resolution_clock::now();
 
 #ifdef TIME_KERNELS
   total_ms_fade += ms_fade;
