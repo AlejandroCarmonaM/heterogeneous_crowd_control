@@ -147,7 +147,7 @@ int main(int argc, char* argv[]) {
   MainWindow mainwindow(model);
 
   // Default number of steps to simulate
-  const int maxNumberOfStepsToSimulate = 500;
+  const int maxNumberOfStepsToSimulate = 10000;
   PedSimulation* simulation = new PedSimulation(model, mainwindow);
 
   if (!timing_mode) {
