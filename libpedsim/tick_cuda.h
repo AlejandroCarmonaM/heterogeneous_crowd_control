@@ -35,6 +35,8 @@ void __attribute__((weak)) Heatmap::copyDesiredPosToGPU() {
 
 void __attribute__((weak)) Heatmap::updateHeatmapCUDA(
     std::chrono::_V2::system_clock::time_point* end) {
+  // To stop compiler warnings because of unused var
+  end = end;
   std::cerr << "Notice: calling a dummy function" << __FUNCTION__ << std::endl;
 }
 
@@ -43,6 +45,8 @@ void __attribute__((weak)) Heatmap::freeHeatmapCUDA() {
 }
 
 void __attribute__((weak)) Heatmap::printHeatmapCUDATimings(int n_steps) {
+  // To stop compiler warnings because of unused var
+  n_steps = n_steps;
   std::cerr << "Notice: calling a dummy function" << __FUNCTION__ << std::endl;
 }
 

@@ -18,8 +18,15 @@
 // g++ does not understand cuda stuff. This makes it ignore them. (use this if
 // you want)
 #ifndef __CUDACC__
+
+#ifndef __device__
 #define __device__
+#endif
+
+#ifndef __host__
 #define __host__
+#endif
+
 #endif
 
 #include <deque>

@@ -181,6 +181,7 @@ int main(int argc, char* argv[]) {
     switch (heatmap) {
       case Heatmap::SEQ_HM:
         model.print_seq_heatmap_timings(maxNumberOfStepsToSimulate);
+        break;
       case Heatmap::PAR_HM:
         model.print_gpu_heatmap_avg_timings(maxNumberOfStepsToSimulate);
         break;
