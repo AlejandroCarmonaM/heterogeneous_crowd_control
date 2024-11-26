@@ -88,9 +88,9 @@ class Heatmap {
       cpu_start = gpu_rows - 1;  // Compute 1 extra row
       cpu_scaled_start = CELL_SIZE * cpu_start;
 
-      std::cout << "Heatmap GPU rows [0:" << gpu_rows - 1 << "]" << std::endl;
-      std::cout << "Heatmap CPU rows [" << cpu_start << ":" << LENGTH << "] (" << LENGTH - cpu_start
-                << " rows for CPU)" << std::endl;
+      printf("Heatmap GPU rows [0:%d] (%d rows for GPU)\n", gpu_rows - 1, gpu_rows);
+      printf("Heatmap CPU rows [%d:%d] (%d rows for CPU)\n", cpu_start, LENGTH - 1,
+             LENGTH - cpu_start);
     }
   }
 

@@ -58,8 +58,8 @@ class Model {
 
  private:
   IMPLEMENTATION impl;
-  Heatmap::HEATMAP_IMPL heatmap_impl;
   int n_threads;
+  Heatmap::HEATMAP_IMPL heatmap_impl;
 
   TagentSoA* agents_soa = nullptr;
   uint64_t total_cpu_time = 0;
