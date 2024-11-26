@@ -16,7 +16,6 @@ const int W[5][5] = {
 
 float total_heatmap_seq_ms;
 
-// TODO: Free this
 int** heatmap;
 int** scaled_heatmap;
 
@@ -81,8 +80,16 @@ void Heatmap::updateHeatmapSeq() {
     }
   }
 
-  for (int i = cpu_scaled_start + 2 + 1; i < SCALED_LENGTH - 2;
-       i++) {  // +1 to not write on top of GPU
+  // In heterogeneous mode, start 1 pixel lower to avoid writing to same row as GPU
+  int extra_offset;
+
+  if (impl == HET_HM) {
+    extra_offset = 1;
+  } else {
+    extra_offset = 0;
+  }
+
+  for (int i = cpu_scaled_start + 2 + extra_offset; i < SCALED_LENGTH - 2; i++) {
     for (int j = 2; j < SCALED_LENGTH - 2; j++) {
       int sum = 0;
       for (int k = -2; k < 3; k++) {

@@ -31,9 +31,6 @@ class Model {
         Heatmap::HEATMAP_IMPL heatmap_impl);
   ~Model();
 
-  // TODO: Some heat on upper left corner for first frame when calling this on uninitiallized
-  // desired_pos
-
   void tick();
 
   TagentSoA* getAgentSoA() const { return agents_soa; };

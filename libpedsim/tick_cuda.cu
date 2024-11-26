@@ -219,7 +219,6 @@ __global__ void updateHeatmap(const int* pos_x, const int* pos_y, int* heatmap, 
       return;
     }
 
-    // TODO: check if the value of heatmap is already 255 -> nothing to do
     atomicAdd(&heatmap[y * cols + x], 40);
   }
 }

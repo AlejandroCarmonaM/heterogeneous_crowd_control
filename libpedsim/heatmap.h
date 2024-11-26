@@ -22,19 +22,38 @@ class Heatmap {
  public:
   // TODO: Remove NONE impl
   enum HEATMAP_IMPL { SEQ_HM, PAR_HM, HET_HM, NONE };
+  static constexpr float FRACTION_GPU = 832.0f / 1024.0f;
 
   Heatmap(HEATMAP_IMPL impl, Ped::TagentSoA* agents_soa) : impl(impl), agents_soa(agents_soa) {
     switch (impl) {
       case SEQ_HM:
-        distributeRows(0);
+        gpu_rows = 0;
+        gpu_scaled_rows = 0;
+        cpu_start = 0;
+        cpu_scaled_start = 0;
+        printf("Heatmap CPU rows [%d:%d] (%d rows for CPU)\n", cpu_start, LENGTH - 1,
+               LENGTH - cpu_start);
+
         setupHeatmapSeq();
         break;
       case PAR_HM:
-        distributeRows(1);
+        gpu_rows = LENGTH;
+        gpu_scaled_rows = gpu_rows * CELL_SIZE;
+        cpu_start = LENGTH - 1;
+        cpu_scaled_start = LENGTH * CELL_SIZE;
+        printf("Heatmap GPU rows [0:%d] (%d rows for GPU)\n", gpu_rows - 1, gpu_rows);
+
         setupHeatmapCUDA();
         break;
       case HET_HM:
-        distributeRows(832.0f / 1024.0f);
+        gpu_rows = ceil(round(FRACTION_GPU * LENGTH) / BLOCK_LENGTH) * BLOCK_LENGTH;
+        gpu_scaled_rows = CELL_SIZE * gpu_rows;
+        cpu_start = gpu_rows - 1;  // Compute 1 extra row
+        cpu_scaled_start = CELL_SIZE * cpu_start;
+        printf("Heatmap GPU rows [0:%d] (%d rows for GPU)\n", gpu_rows - 1, gpu_rows);
+        printf("Heatmap CPU rows [%d:%d] (%d rows for CPU)\n", cpu_start, LENGTH - 1,
+               LENGTH - cpu_start);
+
         setupHeatmapSeq();
         setupHeatmapCUDA();
         break;
@@ -53,8 +72,6 @@ class Heatmap {
       delete[] bhm;
     }
 
-    delete[] blurred_heatmap;
-
     switch (impl) {
       case SEQ_HM:
         freeHeatmapSeq();
@@ -70,29 +87,9 @@ class Heatmap {
         return;
         break;
     }
+
+    delete[] blurred_heatmap;
   };
-
-  // Set number of rows assigned to GPU and GPU, aligning number of gpu rows to thread block length
-  void distributeRows(float fraction_gpu) {
-    gpu_rows = ceil(round(fraction_gpu * LENGTH) / BLOCK_LENGTH) * BLOCK_LENGTH;
-    gpu_scaled_rows = CELL_SIZE * gpu_rows;
-
-    if (gpu_rows == LENGTH) {
-      std::cout << "Heatmap GPU rows [0:" << gpu_rows - 1 << "]" << std::endl;
-    } else if (gpu_rows == 0) {
-      cpu_start = 0;
-      cpu_scaled_start = 0;
-      std::cout << "Heatmap CPU rows [" << cpu_start << ":" << LENGTH << "] (" << LENGTH - cpu_start
-                << " rows for CPU)" << std::endl;
-    } else {
-      cpu_start = gpu_rows - 1;  // Compute 1 extra row
-      cpu_scaled_start = CELL_SIZE * cpu_start;
-
-      printf("Heatmap GPU rows [0:%d] (%d rows for GPU)\n", gpu_rows - 1, gpu_rows);
-      printf("Heatmap CPU rows [%d:%d] (%d rows for CPU)\n", cpu_start, LENGTH - 1,
-             LENGTH - cpu_start);
-    }
-  }
 
   void updateHeatmapSeq();
   void updateHeatmapCUDA(std::chrono::_V2::system_clock::time_point* end);
