@@ -181,18 +181,20 @@ int main(int argc, char* argv[]) {
     switch (heatmap) {
       case Heatmap::SEQ_HM:
         model.print_seq_heatmap_timings(maxNumberOfStepsToSimulate);
+        model.print_diff_timings(maxNumberOfStepsToSimulate);
         break;
       case Heatmap::PAR_HM:
         model.print_gpu_heatmap_avg_timings(maxNumberOfStepsToSimulate);
+        model.print_diff_timings(maxNumberOfStepsToSimulate);
         break;
       case Heatmap::HET_HM:
         model.print_seq_heatmap_timings(maxNumberOfStepsToSimulate);
         model.print_gpu_heatmap_avg_timings(maxNumberOfStepsToSimulate);
+        model.print_diff_timings(maxNumberOfStepsToSimulate);
         break;
       case Heatmap::NONE:
         break;
     }
-    model.print_diff_timings(maxNumberOfStepsToSimulate);
   } else {
     cout << "Time: " << elapsed_seconds.count() << " seconds." << endl;
   }

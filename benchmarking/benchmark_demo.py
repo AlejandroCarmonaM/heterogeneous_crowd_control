@@ -26,11 +26,12 @@ IMPLEMENTATIONS = {
 THREADS = [1, 2, 4]
 
 SCENARIOS = [
-    "commute_200000.xml",
+    # "commute_200000.xml",
     "lab3-scenario.xml",
     # "lab3-scenario-uneven.xml",
     # "scenario_small.xml",
     "worst_scenario.xml",
+    "big_scenario.xml",
 ]
 
 COMMAND_BASE = "../demo/demo --timing-mode --implementation={impl_name} -n{num_threads} ../demo/{scenario}"
@@ -72,7 +73,7 @@ def run_implementation(impl_name, num_threads, writer):
             )
 
             try:
-                print(f'Running command "{command}"')
+                print(f'Running "{command}"')
                 result = subprocess.run(
                     command.split(), capture_output=True, text=True, check=True
                 )

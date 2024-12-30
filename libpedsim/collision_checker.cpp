@@ -52,7 +52,7 @@ void CollisionChecker::setLimits(Waypoint* waypoints, int total_waypoints) {
   midx = x + w / 2;
   midy = y + h / 2;
 
-  printf("Setting collision checker limits (%d,%d) w=%d h=%d\n", x, y, w, h);
+  // printf("Setting collision checker limits (%d,%d) w=%d h=%d\n", x, y, w, h);
 }
 
 CollisionChecker::~CollisionChecker() { delete[] positions; }
@@ -65,7 +65,6 @@ bool CollisionChecker::isNearBorder(int pos_x, int pos_y) {
 }
 
 int CollisionChecker::getQuadrant(int pos_x, int pos_y) {
-  // TODO: Optimize this
   if ((pos_x < midx) && (pos_y < midy)) return 0;
   if ((pos_x >= midx) && (pos_y < midy)) return 1;
   if ((pos_x >= midx) && (pos_y >= midy)) return 2;

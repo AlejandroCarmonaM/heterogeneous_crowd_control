@@ -1,0 +1,81 @@
+<welcome>
+  <!-- waypoints - define before the agents! -->
+  <waypoint id="w1" x="0" y="150" r="20" />
+  <waypoint id="w2" x="100" y="0" r="20" />
+  <waypoint id="w3" x="200" y="0" r="20" />
+  <waypoint id="w4" x="400" y="100" r="20" />
+  <waypoint id="w5" x="400" y="200" r="40" />
+  <waypoint id="w6" x="250" y="300" r="20" />
+  <waypoint id="w7" x="100" y="350" r="40" />
+
+  <!-- agents -->
+  <agent x="0" y="150" n="100000" dx="150" dy="150">
+    <addwaypoint id="w2" />
+    <addwaypoint id="w3" />
+    <addwaypoint id="w4" />
+    <addwaypoint id="w5" />
+    <addwaypoint id="w6" />
+    <addwaypoint id="w7" />
+    <addwaypoint id="w1" />
+  </agent>
+
+  <agent x="100" y="0" n="100000" dx="130" dy="130">
+    <addwaypoint id="w3" />
+    <addwaypoint id="w4" />
+    <addwaypoint id="w5" />
+    <addwaypoint id="w6" />
+    <addwaypoint id="w7" />
+    <addwaypoint id="w1" />
+    <addwaypoint id="w2" />
+  </agent>
+
+  <agent x="200" y="0" n="100000" dx="140" dy="140">
+    <addwaypoint id="w4" />
+    <addwaypoint id="w5" />
+    <addwaypoint id="w6" />
+    <addwaypoint id="w7" />
+    <addwaypoint id="w1" />
+    <addwaypoint id="w2" />
+    <addwaypoint id="w3" />
+  </agent>
+
+  <agent x="400" y="100" n="100000" dx="150" dy="150">
+    <addwaypoint id="w5" />
+    <addwaypoint id="w6" />
+    <addwaypoint id="w7" />
+    <addwaypoint id="w1" />
+    <addwaypoint id="w2" />
+    <addwaypoint id="w3" />
+    <addwaypoint id="w4" />
+  </agent>
+
+  <agent x="400" y="200" n="100000" dx="160" dy="160">
+    <addwaypoint id="w6" />
+    <addwaypoint id="w7" />
+    <addwaypoint id="w1" />
+    <addwaypoint id="w2" />
+    <addwaypoint id="w3" />
+    <addwaypoint id="w4" />
+    <addwaypoint id="w5" />
+  </agent>
+
+  <agent x="250" y="300" n="100000" dx="120" dy="120">
+    <addwaypoint id="w7" />
+    <addwaypoint id="w1" />
+    <addwaypoint id="w2" />
+    <addwaypoint id="w3" />
+    <addwaypoint id="w4" />
+    <addwaypoint id="w5" />
+    <addwaypoint id="w6" />
+  </agent>
+
+  <agent x="100" y="350" n="100000" dx="135" dy="135">
+    <addwaypoint id="w1" />
+    <addwaypoint id="w2" />
+    <addwaypoint id="w3" />
+    <addwaypoint id="w4" />
+    <addwaypoint id="w5" />
+    <addwaypoint id="w6" />
+    <addwaypoint id="w7" />
+  </agent>
+</welcome>
