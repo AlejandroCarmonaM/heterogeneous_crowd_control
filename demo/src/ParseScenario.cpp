@@ -22,7 +22,7 @@ bool positionComparator(Ped::Tagent* a, Ped::Tagent* b) {
 ParseScenario::ParseScenario(QString filename) : QObject(0) {
   QFile file(filename);
   if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-    std::cerr << "File " << qPrintable(filename) << " not found" << endl;
+    std::cerr << "File \"" << qPrintable(filename) << "\" not found" << endl;
     exit(-1);
   }
 

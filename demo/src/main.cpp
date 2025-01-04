@@ -25,17 +25,19 @@
 #include "ped_agent_soa.h"
 #include "ped_model.h"
 
-void printHelp(char* program_name) {
-  cout << "Usage: " << program_name
+void printUsage(char* program_name) {
+  cout << "\nUsage: " << program_name
        << " [-h|--help] [--timing-mode]  [--heatmap_(seq,par,het)] "
           "[--implementation=(CUDA,vector,OMP,pthreads,sequential,col_prevent_seq,col_prevent_par)]"
-          " [-n(NUM_THREADS)] SCENARIO_FILE"
+          " [-n(NUM_THREADS)] SCENARIO_FILE\n"
+          "\n(NUM_THREADS must be > 0 and < "
+       << Ped::TagentSoA::MAX_THREADS << ")"
+       << "\n(--timing-mode reduces output to the terminal and doesn't show graphic representation)"
        << endl;
   cout
-      << "e.g.: " << program_name
+      << "\ne.g.: " << program_name
       << " --timing-mode --heatmap_het --implementation=col_prevent_par -n4 demo/commute_200000.xml"
       << endl;
-  cout << "(NUM_THREADS must be > 0 and < " << Ped::TagentSoA::MAX_THREADS << ")" << endl;
 }
 
 int main(int argc, char* argv[]) {
@@ -75,19 +77,21 @@ int main(int argc, char* argv[]) {
           heatmap = Heatmap::HET_HM;
 
         } else if (strcmp(&argv[i][2], "help") == 0) {
-          printHelp(argv[0]);
+          printUsage(argv[0]);
           return 0;
 
         } else if (strncmp(&argv[i][2], impl_arg, strlen(impl_arg)) == 0) {
           impl_str = string(&argv[i][2] + strlen(impl_arg));
           if (impl_map.find(impl_str) == impl_map.end()) {
             cerr << "Unrecognized implementation: \"" << impl_str << "\"" << endl;
+            printUsage(argv[0]);
             return -1;
           }
           impl = impl_map.at(impl_str);
 
         } else {
           cerr << "Unrecognized command: \"" << argv[i] << endl;
+          printUsage(argv[0]);
           return -1;
         }
 
@@ -96,20 +100,28 @@ int main(int argc, char* argv[]) {
         if (n_threads <= 0 || n_threads > Ped::TagentSoA::MAX_THREADS) {
           cerr << "Invalid number of threads: " << n_threads << endl;
           cerr << "(must be > 0 and < " << Ped::TagentSoA::MAX_THREADS << ")" << endl;
+          printUsage(argv[0]);
           return -1;
         }
 
       } else if (argv[i][1] == 'h' && strlen(argv[i]) == 2) {
-        printHelp(argv[0]);
+        printUsage(argv[0]);
         return 0;
 
       } else {
         cerr << "Unrecognized command: \"" << argv[i] << endl;
+        printUsage(argv[0]);
         return -1;
       }
 
     } else {
       // Assume it is a path to scenefile
+      if (!scenefile.isEmpty()) {
+        cerr << "Multiple scenario files specified: \"" << qPrintable(scenefile) << "\" and \""
+             << argv[0] << "\"" << endl;
+        printUsage(argv[0]);
+        return -1;
+      }
       scenefile = argv[i];
     }
   }
@@ -121,7 +133,8 @@ int main(int argc, char* argv[]) {
       n_threads = 1;
 
       if (!timing_mode) {
-        cout << "Setting number of threads to " << n_threads << endl;
+        cout << "Setting number of CPU threads to " << n_threads << " as implementation is "
+             << impl_str << endl;
       }
     }
   }
@@ -129,7 +142,7 @@ int main(int argc, char* argv[]) {
   // Reading the scenario file and setting up the crowd simulation model
   if (scenefile.isEmpty()) {
     cerr << "Please specify a scenario" << endl;
-    printHelp(argv[0]);
+    printUsage(argv[0]);
     return -1;
   }
   ParseScenario parser(scenefile);
@@ -152,7 +165,7 @@ int main(int argc, char* argv[]) {
 
   if (!timing_mode) {
     cout << "Demo setup complete, running " << impl_str << " implementation" << " with "
-         << n_threads << " threads" << endl;
+         << n_threads << " threads for " << maxNumberOfStepsToSimulate << " steps" << endl;
   }
   int retval = 0;
   // Timing of simulation

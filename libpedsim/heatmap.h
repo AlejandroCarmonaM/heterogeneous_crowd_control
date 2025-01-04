@@ -31,8 +31,8 @@ class Heatmap {
         gpu_scaled_rows = 0;
         cpu_start = 0;
         cpu_scaled_start = 0;
-        printf("Heatmap CPU rows [%d:%d] (%d rows for CPU)\n", cpu_start, LENGTH - 1,
-               LENGTH - cpu_start);
+        // printf("Heatmap CPU rows [%d:%d] (%d rows for CPU)\n", cpu_start, LENGTH - 1,
+        //        LENGTH - cpu_start);
 
         setupHeatmapSeq();
         break;
@@ -41,7 +41,7 @@ class Heatmap {
         gpu_scaled_rows = gpu_rows * CELL_SIZE;
         cpu_start = LENGTH - 1;
         cpu_scaled_start = LENGTH * CELL_SIZE;
-        printf("Heatmap GPU rows [0:%d] (%d rows for GPU)\n", gpu_rows - 1, gpu_rows);
+        // printf("Heatmap GPU rows [0:%d] (%d rows for GPU)\n", gpu_rows - 1, gpu_rows);
 
         setupHeatmapCUDA();
         break;
@@ -50,9 +50,9 @@ class Heatmap {
         gpu_scaled_rows = CELL_SIZE * gpu_rows;
         cpu_start = gpu_rows - 1;  // Compute 1 extra row
         cpu_scaled_start = CELL_SIZE * cpu_start;
-        printf("Heatmap GPU rows [0:%d] (%d rows for GPU)\n", gpu_rows - 1, gpu_rows);
-        printf("Heatmap CPU rows [%d:%d] (%d rows for CPU)\n", cpu_start, LENGTH - 1,
-               LENGTH - cpu_start);
+        // printf("Heatmap GPU rows [0:%d] (%d rows for GPU)\n", gpu_rows - 1, gpu_rows);
+        // printf("Heatmap CPU rows [%d:%d] (%d rows for CPU)\n", cpu_start, LENGTH - 1,
+        //        LENGTH - cpu_start);
 
         setupHeatmapSeq();
         setupHeatmapCUDA();
