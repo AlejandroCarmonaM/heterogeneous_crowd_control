@@ -14,11 +14,6 @@
 #include "ped_waypoint.h"
 #include "tick_cuda.h"
 
-const int Ped::TagentSoA::MAX_THREADS = 16;
-const int Ped::TagentSoA::NUM_QUADRANTS = 4;
-const int Ped::TagentSoA::AGENTS_PER_VECTOR = 4;
-const int Ped::TagentSoA::N_ALTERNATIVES = 3;
-
 Ped::TagentSoA::TagentSoA(std::vector<Ped::Tagent*> agents, bool heatmap_cuda) {
   constexpr int ALIGNMENT = AGENTS_PER_VECTOR * sizeof(int);
 
@@ -101,7 +96,28 @@ Ped::TagentSoA::TagentSoA(std::vector<Ped::Tagent*> agents, bool heatmap_cuda) {
       waypoint_start_offset[n_agents - 1] + agents[n_agents - 1]->getNumWaypoints();
 }
 
-void Ped::TagentSoA::setupPthreads(int n_threads) { this->n_threads = n_threads; }
+void Ped::TagentSoA::setupPthreads(int n_threads) {
+  this->n_threads = n_threads;
+  exit_flag.store(false);
+  pthread_barrier_init(&barrier, nullptr, n_threads);
+
+  int start = 0;
+  int remaining_agents = n_agents % n_threads;
+
+  // Create n_threads-1 threads
+  for (int i = 0; i < n_threads - 1; i++) {
+    // First remaining_agents threads will have 1 more agent than the rest
+    int chunk_size = n_agents / n_threads + (i < remaining_agents ? 1 : 0);
+    int end = start + chunk_size;
+
+    // Created threads will wait each tick at barrier in pthreadTask for main thread
+    workers[i] = std::thread([this, start, end]() {
+      while (pthreadWorkerTick(start, end));
+    });
+    start = end;
+  }
+  main_thread_start = start;
+}
 
 void Ped::TagentSoA::setupColCheckSeq() {
   col_checker = new CollisionChecker(agents_x, agents_y, n_agents, waypoints, total_waypoints);
@@ -175,8 +191,14 @@ void Ped::TagentSoA::ompTick() {
   }
 }
 
-// Identical to seqTick but with a subset [start,end) of agents
-void Ped::TagentSoA::pthreadTask(int start, int end) {
+bool Ped::TagentSoA::pthreadWorkerTick(int start, int end) {
+  // Ensure workers wait for the main thread
+  pthread_barrier_wait(&barrier);
+
+  if (exit_flag.load()) {
+    return false;
+  }
+
   for (int i = start; i < end; i++) {
     std::pair<int, int> movement = getMovement(i);
     desired_pos_x[i] = agents_x[i] + movement.first;
@@ -185,23 +207,19 @@ void Ped::TagentSoA::pthreadTask(int start, int end) {
     agents_x[i] = desired_pos_x[i];
     agents_y[i] = desired_pos_y[i];
   }
+
+  // Ensure main thread only exits after all workers have finished their work
+  pthread_barrier_wait(&barrier);
+
+  return true;
 }
 
-void Ped::TagentSoA::pthreadTick() {
-  std::thread workers[MAX_THREADS];
+void Ped::TagentSoA::pthreadTick() { pthreadWorkerTick(main_thread_start, n_agents); }
 
-  int start = 0;
-  int remaining_agents = n_agents % n_threads;
-  for (int i = 0; i < n_threads; i++) {
-    // First remaining_agents threads will have 1 more agent than the rest
-    int chunk_size = n_agents / n_threads + (i < remaining_agents ? 1 : 0);
-    int end = start + chunk_size;
-
-    workers[i] = std::thread([this, start, end]() { pthreadTask(start, end); });
-    start = end;
-  }
-
-  for (int i = 0; i < n_threads; i++) {
+void Ped::TagentSoA::freePthreads() {
+  exit_flag.store(true);
+  pthread_barrier_wait(&barrier);
+  for (int i = 0; i < n_threads - 1; i++) {
     workers[i].join();
   }
 }

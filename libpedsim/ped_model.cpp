@@ -57,6 +57,8 @@ Ped::Model::~Model() {
   if (agents_soa != nullptr) {
     if (impl == IMPLEMENTATION::CUDA) {
       agents_soa->freeCUDA();
+    } else if (impl == IMPLEMENTATION::PTHREAD) {
+      agents_soa->freePthreads();
     }
     delete agents_soa;
     agents_soa = nullptr;
