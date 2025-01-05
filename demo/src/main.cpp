@@ -26,17 +26,35 @@
 #include "ped_model.h"
 
 void printUsage(char* program_name) {
-  cout << "\nUsage: " << program_name
-       << " [-h|--help] [--timing-mode]  [--heatmap_(seq,par,het)] "
-          "[--implementation=(CUDA,vector,OMP,pthreads,sequential,col_prevent_seq,col_prevent_par)]"
-          " [-n(NUM_THREADS)] SCENARIO_FILE\n"
-          "\n(NUM_THREADS must be > 0 and < "
-       << Ped::TagentSoA::MAX_THREADS << ")"
-       << "\n(--timing-mode reduces output to the terminal and doesn't show graphic representation)"
-       << endl;
   cout
-      << "\ne.g.: " << program_name
-      << " --timing-mode --heatmap_het --implementation=col_prevent_par -n4 demo/commute_200000.xml"
+      << "\n"
+         "Usage: "<< program_name <<" [-h|--help] [--timing-mode]  [--heatmap_(seq,par,het)]  "
+         "[--implementation=(CUDA,vector,OMP,pthreads,sequential,col_prevent_seq,col_prevent_par)] "
+         "[-n(NUM_THREADS)] SCENARIO_FILE\n"
+         "\n"
+         "e.g.: "<< program_name <<" --timing-mode --heatmap_het --implementation=col_prevent_par -n4 "
+         "demo/commute_200000.xml\n"
+         "\n"
+         "--timing-mode: Reduce output to the terminal and don't show graphic representation.\n"
+         "--heatmap_(seq,par,het): Selects a heatmap implementation. If this option isn't "
+         "specified, heatmap is not shown. Options are:\n"
+         "  - heatmap_seq: Heatmap is computed by a single CPU thread.\n"
+         "  - heatmap_par: Heatmap is computed in the GPU.\n"
+         "  - heatmap_het: Heatmap workload is divided between CPU (single thread) and GPU.\n"
+         "--implementation=: Selects an implementation for moving agents. If this option isn't "
+         "specified, sequential is the default implementation. Options are:\n"
+         "  - sequential: A single CPU thread is used.\n"
+         "  - OMP: A number of threads specified by the -n option are used with OpenMP.\n"
+         "  - pthreads: Same as OMP but threads are managed with pthreads.\n"
+         "  - vector: Same as OMP option, but each thread uses SIMD instructions to process 4 "
+         "agents at a time.\n"
+         "  - CUDA: Agent movement is processed in the GPU.\n"
+         "  - col_prevent_seq: Same as sequential but with collision avoidance between agents.\n"
+         "  - col_prevent_par: Divides the scenario in 4 regions, allowing parallel agent movement "
+         "(with collision avoidance) calculation with multiple threads. The number of threads to "
+         "use can be specified with -n, but the fastest value is very likely to be -n4.\n"
+         "-n(NUM_THREADS): Sets number of threads for OMP, pthreads, vector and col_prevent_par. NUM_THREADS "
+         "must be > 0 and <= 16."
       << endl;
 }
 
@@ -99,7 +117,7 @@ int main(int argc, char* argv[]) {
         n_threads = atoi(&argv[i][2]);
         if (n_threads <= 0 || n_threads > Ped::TagentSoA::MAX_THREADS) {
           cerr << "Invalid number of threads: " << n_threads << endl;
-          cerr << "(must be > 0 and < " << Ped::TagentSoA::MAX_THREADS << ")" << endl;
+          cerr << "(must be > 0 and <= " << Ped::TagentSoA::MAX_THREADS << ")" << endl;
           printUsage(argv[0]);
           return -1;
         }
