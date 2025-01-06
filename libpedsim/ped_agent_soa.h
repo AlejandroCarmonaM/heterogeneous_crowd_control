@@ -1,6 +1,7 @@
 #pragma once
 
 #include <set>
+#include <thread>
 
 #include "collision_checker.h"
 #include "ped_agent.h"
@@ -11,13 +12,14 @@ class Model;
 
 class TagentSoA {
  public:
-  static const int MAX_THREADS;
-  static const int NUM_QUADRANTS;
+  static constexpr int MAX_THREADS = 16;
+  static constexpr int NUM_QUADRANTS = 4;
 
   TagentSoA(std::vector<Ped::Tagent*> agents, bool heatmap_cuda);
   ~TagentSoA();
 
   void setupPthreads(int n_threads);
+  void freePthreads();
   void setupCUDA();
   void freeCUDA();
   void setupColCheckSeq();
@@ -43,8 +45,8 @@ class TagentSoA {
   CollisionChecker::AreaLimits getColAreaLimits() { return col_checker->getColAreaLimits(); }
 
  private:
-  static const int AGENTS_PER_VECTOR;
-  static const int N_ALTERNATIVES;
+  static constexpr int AGENTS_PER_VECTOR = 4;
+  static constexpr int N_ALTERNATIVES = 3;
 
   struct CrossingAgent {
     int agent;
@@ -75,12 +77,16 @@ class TagentSoA {
 
   // pthreads
   int n_threads;
+  int main_thread_start;
+  std::thread workers[MAX_THREADS - 1];
+  std::atomic<bool> exit_flag;
+  pthread_barrier_t barrier;
+  bool pthreadWorkerTick(int start, int end);
 
   CollisionChecker* col_checker = nullptr;
   std::set<int>* quadrant_agents = nullptr;
 
   void setNewDestination(int i, int num_waypoints);
-  void pthreadTask(int start, int end);
 
   std::pair<int, int> getMovement(int i);
 
