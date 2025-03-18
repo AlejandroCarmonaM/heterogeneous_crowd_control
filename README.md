@@ -17,7 +17,7 @@ The simulation can be run with:
 E.g.:
 
 ```
-./demo/demo --timing-mode --heatmap_het --implementation=col_prevent_par -n4 demo/commute_200000.xml
+./demo/demo --heatmap_het --implementation=col_prevent_par -n4 demo/commute_200000.xml
 ```
 
 Options are:
